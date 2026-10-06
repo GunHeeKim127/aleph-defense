@@ -13,7 +13,8 @@ export function createNotesHandler({ config, single = false, env = process.env,
       verify ??= verifierFactory({ config, supabaseSecretKey: env.SUPABASE_SECRET_KEY });
       identity = await verify(req.headers.authorization);
     } catch { return error(503, '로그인 확인 설정을 확인하세요.'); }
-    if (!identity) return error(401, '로그인 정보가 유효하지 않습니다. 다시 로그인하세요.');
+    if (!identity || typeof identity.userId !== 'string' || !UUID.test(identity.userId)) return error(401, '로그인 정보가 유효하지 않습니다. 다시 로그인하세요.');
+    if (req.query && Object.hasOwn(req.query, 'owner_id')) return error(403, '메모 소유자는 변경할 수 없습니다.');
     const methods = single ? ['GET', 'PUT', 'DELETE'] : ['GET', 'POST'];
     if (!methods.includes(req.method)) {
       res.setHeader('Allow', methods.join(', '));
@@ -25,6 +26,7 @@ export function createNotesHandler({ config, single = false, env = process.env,
     if (req.method === 'POST' || req.method === 'PUT') {
       let input = req.body;
       try { if (typeof input === 'string') input = JSON.parse(input); } catch { return error(400, 'JSON 형식을 확인하세요.'); }
+      if (input && typeof input === 'object' && Object.hasOwn(input, 'owner_id')) return error(403, '메모 소유자는 변경할 수 없습니다.');
       if (!input || typeof input !== 'object' || Array.isArray(input)
           || typeof input.title !== 'string' || !input.title.trim() || input.title.length > 200
           || typeof input.body !== 'string' || !input.body.trim() || input.body.length > 10000) return error(400, '제목과 가상 메모 내용을 입력하세요.');
@@ -40,11 +42,28 @@ export function createNotesHandler({ config, single = false, env = process.env,
       if (base.protocol !== 'https:' || base.username || base.password
           || base.origin + '/auth/v1' !== config.identityProvider.issuer || !env.SUPABASE_SECRET_KEY) throw new Error();
       const url = new URL('/rest/v1/learning_notes', base);
-      url.searchParams.set('select', 'id,title,body:content');
+      url.searchParams.set('select', 'id,title,body:content,owner_id');
       if (single) url.searchParams.set('id', 'eq.' + id);
       else if (req.method === 'GET') url.searchParams.set('owner_id', 'eq.' + identity.userId);
       if (req.method === 'GET') url.searchParams.set('order', 'id.asc');
-      // Step 3 deliberately has no owner filter on individual GET/PUT/DELETE.
+      if (single) {
+        const check = await fetchImpl(url, {
+          headers: { apikey: env.SUPABASE_SECRET_KEY }, method: 'GET',
+          redirect: 'error', signal: AbortSignal.timeout(10000),
+        });
+        if (!check.ok) return error(503, '자료를 처리할 수 없습니다.');
+        const existing = await check.json();
+        if (!Array.isArray(existing) || existing.length > 1) throw new Error();
+        if (!existing.length) return error(404, '메모를 찾을 수 없습니다.');
+        if (existing[0].owner_id !== identity.userId) return error(403, '본인 메모만 접근할 수 있습니다.');
+        if (req.method === 'GET') {
+          const { id, title, body } = existing[0];
+          return res.status(200).json({ id, title, body });
+        }
+        // Recheck the existing owner atomically during mutation, even if it changes after the read.
+        url.searchParams.set('owner_id', 'eq.' + identity.userId);
+        if (req.method === 'PUT') payload.owner_id = identity.userId;
+      }
       const upstream = await fetchImpl(url, {
         method: req.method === 'PUT' ? 'PATCH' : req.method,
         headers: { apikey: env.SUPABASE_SECRET_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' },
@@ -56,6 +75,7 @@ export function createNotesHandler({ config, single = false, env = process.env,
       const rows = await upstream.json();
       if (!Array.isArray(rows)) throw new Error();
       if (single && rows.length === 0) return error(404, '메모를 찾을 수 없습니다.');
+      if (rows.some(row => row.owner_id !== identity.userId)) throw new Error();
       if (req.method === 'POST') return res.status(201).json({ id: payload.id });
       if (req.method === 'DELETE') return res.status(204).end();
       const clean = rows.map(({ id, title, body }) => ({ id, title, body }));

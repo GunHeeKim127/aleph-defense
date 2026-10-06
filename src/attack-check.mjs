@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 // 실제 요청의 상태/개수만 기록합니다. 토큰·메모 본문·키를 반환하지 않습니다.
 export async function runAttackChecks(config) {
   const app = new URL(config.publicAppUrl);
@@ -20,8 +21,15 @@ export async function runAttackChecks(config) {
   results.push({attackId:'security_header',expected:'첫 화면 nosniff',observed:`HTTP ${page.status} · nosniff ${page.headers.get('x-content-type-options') === 'nosniff' ? '확인' : '미확인'}`});
   const deployment=await request('/aleph.json');
   let step=null;try{step=(await deployment.json()).step}catch{}
-  results.push({attackId:'deployment_identity',expected:'aleph.json 열림, 단계 3',observed:`HTTP ${deployment.status} · 단계 ${step ?? '확인 불가'}`});
-  results.push({attackId:'account_a_crud',expected:'실제 A 로그인·로그아웃 및 추가·수정·삭제 성공, 삭제 후 GET 404',observed:'미실행: 사용자가 A 계정으로 화면에서 확인 필요'});
-  results.push({attackId:'account_b_other_note',expected:'3단계 타인 메모 개별 접근 허점 기록, 4단계에서 보호',observed:'실계정 미실행. 소유자 검사 없음은 코드와 로컬 모의 시험에서 확인'});
+  results.push({attackId:'deployment_identity',expected:'aleph.json 열림, 단계 4',observed:`HTTP ${deployment.status} · 단계 ${step ?? '확인 불가'}`});
+  results.push({attackId:'account_a_crud',expected:'실제 A 로그인·로그아웃 및 추가·수정·삭제 성공, 삭제 후 GET 404',observed:'4단계 실계정 본인 CRUD 미실행. 3단계 로그인·로그아웃·CRUD는 사용자 확인 완료'});
+  results.push({attackId:'account_b_other_note',expected:'A/B 상대 메모 조회·수정·삭제와 소유자 변경 거부',observed:'4단계 실계정 미실행. 로컬 모의 A/B 거부 시험 통과'});
+  const publicConfig = JSON.parse(await readFile(new URL('../public/login-config.json', import.meta.url), 'utf8'));
+  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicConfig.publishableKey || '')
+      || publicConfig.projectUrl + '/auth/v1' !== config.identityProvider.issuer) throw new Error('공개 DB 점검 설정을 확인하세요.');
+  const direct = await fetch(new URL('/rest/v1/learning_notes?select=id&limit=1', publicConfig.projectUrl), {
+    headers: { apikey: publicConfig.publishableKey }, redirect: 'error', signal: AbortSignal.timeout(10000),
+  });
+  results.push({ attackId: 'anonymous_direct_data_api', expected: '공개 키만 사용하는 anon 직접 읽기 401/403 거부', observed: `HTTP ${direct.status} · 인증 사용자 토큰/서버 키 미사용` });
   return results;
 }
