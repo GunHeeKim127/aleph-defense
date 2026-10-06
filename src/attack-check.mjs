@@ -22,8 +22,8 @@ export async function runAttackChecks(config) {
   const deployment=await request('/aleph.json');
   let step=null;try{step=(await deployment.json()).step}catch{}
   results.push({attackId:'deployment_identity',expected:'aleph.json 열림, 단계 5',observed:`HTTP ${deployment.status} · 단계 ${step ?? '확인 불가'}`});
-  results.push({attackId:'account_a_crud',expected:'5단계 서버 로그인 및 본인 CRUD 정상',observed:'4단계 사용자 CRUD 확인 완료. 5단계 쿠키 로그인 전환 후 실계정 확인은 미실행'});
-  results.push({attackId:'account_b_other_note',expected:'A/B 상대 메모 조회·수정·삭제와 소유자 변경 거부',observed:'4단계 양방향 403·소유자 변경 거부 사용자 화면 확인 완료. 5단계 실계정 재확인은 미실행'});
+  results.push({attackId:'account_a_crud',expected:'5단계 서버 로그인 및 본인 CRUD 정상',observed:'5단계 사용자 실행 확인: 본인 CRUD 정상, 로그아웃 후 메모 숨김。 도구의 실계정 자동 시험은 미실행'});
+  results.push({attackId:'account_b_other_note',expected:'A/B 상대 메모 조회·수정·삭제와 소유자 변경 거부',observed:'5단계 사용자 화면 확인: 양방향 GET·PUT·DELETE 모두 403。 소유자 변경 거부는 4단계 사용자 확인 및 로컬 모의 시험으로 확인'});
   const publicConfig = JSON.parse(await readFile(new URL('../config/auth.json', import.meta.url), 'utf8'));
   if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicConfig.publishableKey || '')
       || publicConfig.projectUrl + '/auth/v1' !== config.identityProvider.issuer) throw new Error('공개 DB 점검 설정을 확인하세요.');
