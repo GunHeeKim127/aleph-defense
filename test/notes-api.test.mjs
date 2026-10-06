@@ -105,3 +105,10 @@ test('step 4 deployment identity continues to be generated from Vercel metadata'
     {...config,step:4,sampleMarker:'SAMPLE_NOTE_1'});
   assert.equal(identity.step,4);assert.equal(identity.commit,'a'.repeat(40));
 });
+test('step 5 manifest includes data routes and a query-free HTTPS original API',()=>{
+  const routes=['GET /api/notes','POST /api/notes','GET /api/notes/:id','PUT /api/notes/:id','DELETE /api/notes/:id'];
+  const identity=deploymentIdentity({VERCEL_GIT_PROVIDER:'github',VERCEL_GIT_REPO_OWNER:'GunHeeKim127',
+    VERCEL_GIT_REPO_SLUG:'aleph-defense',VERCEL_GIT_COMMIT_SHA:'a'.repeat(40),VERCEL_URL:'aleph-defense.vercel.app'},
+    {...config,step:5,sampleMarker:'SAMPLE_NOTE_1',allowedRoutes:routes,originalApiUrl:'https://unit.supabase.co/rest/v1/learning_notes'});
+  assert.deepEqual(identity.allowedRoutes,routes);assert.equal(new URL(identity.originalApiUrl).search,'');assert.equal(identity.step,5);
+});

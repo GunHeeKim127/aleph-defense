@@ -151,8 +151,52 @@ DB RLS는 검토용 설계이며, SQL Editor에서 사용자가 실행하기 전
 | --- | --- |
 | 본인 CRUD·상호 접근 거부·소유자 변경·경합 방어 | 로컬 모의 시험 9개 통과 |
 | 로컬 정적 빌드 | 통과, 메모 없는 data.json 유지 |
-| 4단계 A/B 실계정 교차 접근 | 사용자 확인: A/B 목록 분리, 상대 메모 GET 403 (화면 증거). PUT/DELETE·소유자 변경은 실계정 미확인 |
-| 소유자 연결·RLS 실제 권한 전후 | A/B 목록 분리는 사용자 확인. RLS 적용 및 권한 전후 결과는 미확인 |
+| 4단계 A/B 실계정 교차 접근 | 사용자 확인: 양방향 GET/PUT/DELETE 403, 본문/URL owner_id 변경 403, 본인 CRUD 정상 및 삭제 후 GET 404 |
+| 소유자 연결·RLS 실제 권한 전후 | 사용자 화면 확인: RLS true, 본인 행 정책 4개, anon 전부 false, authenticated CRUD만 true |
 | 최신 배포의 무로그인·보안 헤더·aleph.json·anon 직접 읽기 | npm run bundle 실제 요청으로 기록 |
 
 위 기록은 자기 점검이며 심판 판정이 아닙니다.
+
+## 5단계 저장점: 자료 요청은 서버로만
+
+시작 커밋: 0659653 4단계 사용자 검증 기록 갱신. Git 상태는 깨끗했습니다.
+그 뒤 사용자 화면 증거로 확인한 4단계 양방향 접근 차단·소유자 변경 거부·RLS 결과를 위 표에 반영했습니다.
+브라우저의 직접 메모 자료 호출: 없음. 기존 목록/조회/추가/수정/삭제는 모두 /api/notes 서버 함수를 사용합니다.
+이 점검으로 자료 호출 코드는 변경하지 않았습니다. 기존 서버 로그인 검증·소유자 검사도 변경하지 않았습니다.
+5단계 설정에 쿼리 없는 HTTPS 원본 테이블 경로를 기록했고 aleph.json에 allowedRoutes를 생성하도록 준비했습니다.
+
+sql/step5-server-only.sql은 learning_notes의 PUBLIC/anon/authenticated 직접 권한을 회수하는 검토용 SQL입니다.
+적용 전후 role_table_grants 및 has_table_privilege를 대조하며 anon/authenticated 모두 false가 정상입니다.
+기존 service_role CRUD, RLS 정책·메모·소유자·Auth·다른 테이블은 보존합니다.
+PostgreSQL SQL/PLpgSQL 문법 검사와 기존 API 모의 시험 9개는 통과했습니다. DB SQL은 실행하지 않았습니다.
+
+공개 키는 서버 전용 config/auth.json으로 옮겼습니다. public/login-config.json과 브라우저 Supabase SDK는 제거했습니다.
+사용자 요청에 따라 Auth 로그인·로그아웃도 /api/auth 서버 함수에서 Supabase 공식 SDK로 처리합니다.
+서버는 기존 검증 도우미로 토큰을 검사한 뒤 HttpOnly·Secure·SameSite=Strict 쿠키에 세션을 보관합니다.
+브라우저 JS/JSON 응답에는 실제 공개 키나 인증 토큰을 반환하지 않습니다. 원시 토큰은 HttpOnly 쿠키로만 전달합니다.
+쿠키 인증을 기존 메모 API Authorization 검증에 연결했으며 외부 Bearer 요청의 검증 흐름은 유지했습니다.
+쿠키를 사용하는 변경 요청은 동일 출처 검사 후 처리합니다. 서버의 공개 키·Secret Key는 응답/로그에 출력하지 않습니다.
+사용자가 입력한 이메일/비밀번호는 HTTPS 로그인 요청으로만 전달하고 파일·로그·제출 묶음에 저장하지 않습니다.
+공식 SDK refreshSession으로 만료된 세션을 갱신하며 signOut은 현재 세션 로그아웃입니다.
+이전 브라우저 SDK 로그인 상태는 자동 이전하지 않으므로 새 화면에서 다시 로그인해야 합니다.
+
+### SQL 적용 및 검증
+
+명령: npm run bundle
+Supabase SQL Editor에서 sql/step5-server-only.sql을 검토하고 실행하세요. 다른 테이블이나 Auth는 바꾸지 않습니다.
+적용 후 anon/authenticated의 SELECT·INSERT·UPDATE·DELETE 및 기타 표에 표시된 권한은 모두 false,
+service_role의 CRUD는 true여야 합니다. 기존 RLS는 유지하되 직접 호출은 GRANT 회수로 차단합니다.
+화면의 메모 요청은 Vercel API만 사용합니다. 정상 A CRUD는 기존 서버 소유자 검사와 서버 역할 권한으로 유지됩니다.
+직접 원본 요청 자기 점검은 서버에서 공개 키만 전송하고 사용자 JWT나 Secret Key를 보내지 않습니다.
+/aleph.json에는 allowedRoutes와 쿼리 없는 originalApiUrl을 포함합니다. nosniff와 정적 메모 0건도 유지합니다.
+
+| 점검 | 결과 |
+| --- | --- |
+| 기존 메모 직접 브라우저 호출 | 없음, 자료 호출 경로 변경 없음 |
+| 서버 Auth/쿠키/CSRF 및 본인 CRUD·타인 거부 | 로컬 모의 시험 14개 통과 |
+| 정적 파일 공개 키·브라우저 Supabase 호출 검색 | 없음 |
+| 직접 권한 회수 SQL | 문법 검사 통과, DB 적용은 사용자 검토 후 진행 |
+| A 정상 로그인/로그아웃·CRUD | 4단계 사용자 확인 완료, 5단계 전환 후 재확인 필요 |
+| 최신 배포 헤더·허용 경로·공개 키 제거·무로그인 거부 | npm run bundle 실제 요청으로 기록 |
+
+기존 공개 커밋과 과거 배포의 키/자료는 이번 변경으로 삭제되지 않습니다. 자기 점검은 심판 판정이 아닙니다.

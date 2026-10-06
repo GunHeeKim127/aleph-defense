@@ -1,17 +1,14 @@
 const $ = id => document.getElementById(id);
-let client, session = null, editId = null, generation = 0;
+let session = null, editId = null, generation = 0;
 const message = text => { $('status').textContent = text; };
 function resetEditor() {
   editId = null; $('editor').reset(); $('editor-heading').textContent = '가상 메모 추가';
   $('save').textContent = '추가'; $('cancel').hidden = true;
 }
 async function api(path = '', options = {}) {
-  const { data, error } = await client.auth.getSession();
-  if (error || !data.session) throw new Error('로그인이 필요합니다.');
+  if (!session) throw new Error('로그인이 필요합니다.');
   const response = await fetch('/api/notes' + path, {
-    ...options, cache: 'no-store', headers: {
-      'Content-Type': 'application/json', Authorization: 'Bearer ' + data.session.access_token,
-    },
+    ...options, cache: 'no-store', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
   });
   const json = response.status === 204 ? null : await response.json();
   if (!response.ok) throw new Error(json?.error || '요청을 처리할 수 없습니다.');
@@ -55,15 +52,14 @@ function showSession(next) {
 $('login').onsubmit = async event => {
   event.preventDefault(); $('login-button').disabled = true;
   try {
-    const { data, error } = await client.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+    const data = await auth({ action: 'login', email: $('email').value.trim(), password: $('password').value });
     $('password').value = '';
-    if (error) throw error;
-    showSession(data.session);
+    showSession(data.authenticated);
   } catch (error) { $('password').value = ''; message('로그인 실패: ' + error.message); }
   finally { $('login-button').disabled = false; }
 };
 $('logout').onclick = async () => {
-  try { const { error } = await client.auth.signOut({ scope: 'local' }); if (error) throw error; showSession(null); }
+  try { await auth({ action: 'logout' }); showSession(null); }
   catch (error) { message('로그아웃 실패: ' + error.message); }
 };
 $('refresh').onclick = load; $('cancel').onclick = resetEditor;
@@ -76,12 +72,13 @@ $('editor').onsubmit = async event => {
     resetEditor(); await load();
   } catch (error) { message(error.message); } finally { $('save').disabled = false; }
 };
+async function auth(body) {
+  const response = await fetch('/api/auth', { method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || '로그인 요청을 처리할 수 없습니다.');
+  return data;
+}
 try {
-  const response = await fetch('/login-config.json', { cache: 'no-store' });
-  if (!response.ok) throw new Error('공개 로그인 설정이 없습니다.');
-  const config = await response.json();
-  client = window.supabase.createClient(config.projectUrl, config.publishableKey);
-  client.auth.onAuthStateChange((_event, next) => { setTimeout(() => showSession(next), 0); });
-  const { data, error } = await client.auth.getSession(); if (error) throw error;
-  showSession(data.session); $('login-button').disabled = false;
-} catch { message('로그인 설정을 읽을 수 없습니다. 공개 Project URL과 publishable key를 확인하세요.'); }
+  showSession((await auth()).authenticated); $('login-button').disabled = false;
+} catch { message('로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도하세요.'); }

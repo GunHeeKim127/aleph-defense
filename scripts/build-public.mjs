@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { deploymentIdentity } from './deployment-identity.mjs';
 
@@ -12,6 +12,8 @@ if (!Array.isArray(data.notes) || data.notes.length !== 0) {
   throw new Error('실습용 공개 자료 형식을 확인하세요. 실제 학생 자료를 넣으면 안 됩니다.');
 }
 await mkdir(resolve(root, 'public'), { recursive: true });
+// Remove the previous static auth-key file even if a build cache retained it.
+if (config.step >= 5) await rm(resolve(root, 'public', 'login-config.json'), { force: true });
 await copyFile(source, output);
 console.log('메모가 없는 data.json을 public/data.json에 복사했습니다.');
 if (!process.argv.includes('--local')) {

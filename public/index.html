@@ -7,7 +7,7 @@
 :root{color-scheme:dark;font-family:system-ui,sans-serif}body{margin:0;background:#101a28;color:#ecf4ff}main{max-width:760px;margin:auto;padding:40px 22px}h1{font-size:40px}.eyebrow{color:#8ad8df}p{line-height:1.7;color:#bfd0e5}.panel,li{padding:20px;border:1px solid #51667c;border-radius:14px;background:#1a2a3d;margin:16px 0}label{display:block;margin:12px 0}input,textarea{box-sizing:border-box;width:100%;padding:12px;margin-top:6px;border:1px solid #51667c;border-radius:8px;background:#101a28;color:#ecf4ff}button{padding:10px 16px;border:0;border-radius:8px;background:#8ad8df;color:#101a28;cursor:pointer;margin:6px 6px 0 0}button:disabled{opacity:.5;cursor:wait}ul{list-style:none;padding:0}li strong{font-size:19px}.body{white-space:pre-wrap;color:#bfd0e5}#status{min-height:24px}[hidden]{display:none!important}
 </style>
 </head><body><main>
-<div class="eyebrow">BYTE BACK · 4단계 내 자료만</div><h1>내 자료실</h1>
+<div class="eyebrow">BYTE BACK · 5단계 서버 한곳으로</div><h1>내 자료실</h1>
 <p>학습용 가상 메모만 사용하세요. 로그인한 계정의 메모만 읽고 추가·수정·삭제할 수 있습니다.</p>
 <p id="status" role="status" aria-live="polite">로그인 설정을 확인하는 중입니다.</p>
 <form id="login" class="panel">
@@ -21,6 +21,5 @@
 <button id="save">추가</button><button id="cancel" type="button" hidden>수정 취소</button></form>
 <ul id="notes" aria-live="polite"></ul>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script type="module" src="/app.js"></script>
 </body></html>
