@@ -23,3 +23,43 @@
 [AGENTS.md](AGENTS.md)를 먼저 읽히고 한 번에 한 제작 단위만 요청하세요. 2단계부터는 자료 보호를 구현할 때 `public/data.json`을 복사하는 1단계 빌드 흐름도 함께 바꿔야 합니다. 3단계 이후의 로그인, 허용 경로, 5단계의 원본 API 주소, 6단계 이후 정책 규칙은 해당 단계 원고와 계약에 맞춰 추가합니다. 비밀번호·토큰·서버 전용 키·실제 학생 기록을 코드, Git, 제출 묶음에 넣지 않습니다.
 
 `src/decider.mjs`와 `src/detect.mjs`의 로컬 시험은 반 엔진이나 운영 심판의 결과가 아닙니다. 1단계 이후 제출 묶음 계약 `aleph.defense.submission.v2`는 `scripts/bundle.mjs`에 남아 있으며, 코딩 도구가 해당 단계의 최신 배포 주소와 Git 원격을 맞춘 뒤 사용합니다.
+
+## 2단계 저장점
+
+마지막 1단계 커밋: 5e96d15 Initial commit. 작업 시작 시 다른 변경사항 없음.
+원본 data.json 확인 결과 가상 메모 4건이며, 요청의 '세 개'와 달리 실제 4건을 기준으로 이전했습니다.
+화면은 /api/notes에서 네 카드를 읽습니다. 루트와 public/data.json에는 빈 notes 배열만 있습니다.
+SQL은 공개 Git/정적 파일에 넣지 않는 별도 로컬 산출물 step2-supabase.sql입니다.
+Supabase SQL Editor에서 실행한 뒤 owner_id의 uuid 자료형, RLS true, 정책 없음,
+anon/authenticated SELECT false를 확인하세요. 새 학습용 테이블이 이미 있으면 SQL은 덮어쓰지 않고 실패합니다.
+Vercel 프로젝트 Settings → Environment Variables에서 SUPABASE_URL과 서버 전용 SUPABASE_SECRET_KEY를 직접 설정하고 재배포하세요.
+키 값을 채팅이나 파일에 붙여 넣지 마세요. 서버는 upstream 응답/오류/키를 로그에 쓰지 않습니다.
+로컬 정적 확인: npm run build -- --local. API 확인은 환경변수가 설정된 Vercel 배포에서 합니다.
+
+### 남은 약점
+
+/api/notes는 로그인 인증이 없는 공개 URL입니다. 누구나 API로 네 메모를 읽을 수 있습니다.
+RLS와 브라우저 키 제거는 공개 API의 접근 통제를 대신하지 않습니다.
+과거 공개 커밋과 과거 배포에 메모가 남을 수 있으므로 과거 노출이 해소됐다고 판단하지 않습니다.
+
+### 검증과 기록
+
+GitHub 최신 커밋을 별도 폴더에 받아 원본 가상 메모 본문 네 문장을 검색하세요.
+검색할 문장은 로컬 SQL에서 확인하고, 문장을 README/검색 결과/제출 묶음에 복사하지 마세요.
+검색 대상은 전체 추적 파일이며 검색 결과에는 파일 경로와 일치 개수만 기록하세요.
+최신 배포의 /, /data.json, 페이지가 참조하는 JS 및 기타 정적 파일에도 같은 검색을 수행하세요.
+/data.json은 notes: []이어야 하고, 화면은 네 카드가 표시되어야 합니다.
+비로그인 /api/notes GET은 네 메모를 반환하는 남은 약점이고, POST는 405여야 합니다.
+Supabase에서 anon/authenticated로 직접 SELECT는 거부되어야 합니다.
+
+| 점검 | 결과 | 커밋/배포 주소·시각 |
+| --- | --- | --- |
+| 최신 Git 전체 추적 파일 본문 검색 | 로컬 전체 추적 파일 0건, GitHub는 미실행 | 배포 후 기록 |
+| 최신 배포 정적 파일 본문 검색 | 미실행 | 배포 후 기록 |
+| /data.json 빈 배열 | 로컬 빈 배열 확인, 배포 미실행 | 배포 후 기록 |
+| 화면 네 카드·API GET | DB 설정/배포 후 확인 필요 | 배포 후 기록 |
+| 공개 API 남은 약점 | 인증 없는 URL 구현 | 배포 후 기록 |
+| Supabase owner_id/RLS/권한 | SQL Editor 미실행 | 실행 후 기록 |
+
+실행하지 않은 배포·검증은 성공으로 기록하지 않습니다. 자기 점검은 심판 판정이 아닙니다.
+설정의 실제 배포 주소는 확인 후에만 맞추고 judgeIssuer는 보존합니다.
