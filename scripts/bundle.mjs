@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const root = resolve(import.meta.dirname, '..');
+const root = fileURLToPath(new URL('../', import.meta.url));
 const git = (...args) => execFileSync('git', ['-C', root, ...args], {
   encoding: 'utf8', timeout: 5000, maxBuffer: 512 * 1024, windowsHide: true,
   env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' },
