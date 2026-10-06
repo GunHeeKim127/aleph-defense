@@ -23,7 +23,7 @@ export async function runAttackChecks(config) {
   let step=null;try{step=(await deployment.json()).step}catch{}
   results.push({attackId:'deployment_identity',expected:'aleph.json 열림, 단계 4',observed:`HTTP ${deployment.status} · 단계 ${step ?? '확인 불가'}`});
   results.push({attackId:'account_a_crud',expected:'실제 A 로그인·로그아웃 및 추가·수정·삭제 성공, 삭제 후 GET 404',observed:'4단계 실계정 본인 CRUD 미실행. 3단계 로그인·로그아웃·CRUD는 사용자 확인 완료'});
-  results.push({attackId:'account_b_other_note',expected:'A/B 상대 메모 조회·수정·삭제와 소유자 변경 거부',observed:'4단계 실계정 미실행. 로컬 모의 A/B 거부 시험 통과'});
+  results.push({attackId:'account_b_other_note',expected:'A/B 상대 메모 조회·수정·삭제와 소유자 변경 거부',observed:'사용자 확인: A/B 목록 분리, 상대 메모 GET 403 화면 증거. PUT/DELETE·소유자 변경 실계정 미확인. 로컬 모의 시험 통과'});
   const publicConfig = JSON.parse(await readFile(new URL('../public/login-config.json', import.meta.url), 'utf8'));
   if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicConfig.publishableKey || '')
       || publicConfig.projectUrl + '/auth/v1' !== config.identityProvider.issuer) throw new Error('공개 DB 점검 설정을 확인하세요.');
