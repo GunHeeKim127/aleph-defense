@@ -63,3 +63,49 @@ Supabase에서 anon/authenticated로 직접 SELECT는 거부되어야 합니다.
 
 실행하지 않은 배포·검증은 성공으로 기록하지 않습니다. 자기 점검은 심판 판정이 아닙니다.
 설정의 실제 배포 주소는 확인 후에만 맞추고 judgeIssuer는 보존합니다.
+
+## 3단계 구현 및 저장점
+
+시작 커밋은 `744d6f3 보안 헤더 추가`였고 Git 상태는 깨끗했습니다.
+2단계 기록 이후 보안 헤더가 추가됐지만 이전 결과 표에는 반영되지 않아 이 절에서 보완합니다.
+2단계 실제 배포 점검에서 정적 메모 0건, API 가상 메모 4건, nosniff와 GitHub 최신 본문 검색 0건을 확인했습니다.
+DB 내부 점검은 사용자가 완료했다고 확인했으며 코딩 도구가 DB에 직접 접속해 검증한 결과는 아닙니다.
+
+현재 구현은 Supabase 공식 SDK 이메일·비밀번호 로그인/로그아웃, 내 메모 목록과 추가·수정·삭제입니다.
+공개 Project URL/publishable key 연결 완료. 실제 A 로그인 검증은 사용자가 화면에서 확인해야 합니다.
+서버는 변경하지 않은 src/verify-login.mjs의 createLoginVerifier로 Authorization 토큰을 확인합니다.
+브라우저 userId/role/owner_id를 믿지 않으며 POST의 owner_id는 검증된 사용자 ID입니다.
+목록은 본인 owner_id만 조회합니다. 개별 GET/PUT/DELETE에는 아직 소유자 검사가 없으므로 B가 A의 메모 ID를 알면 읽기·수정·삭제할 수 있습니다. 4단계에서 막습니다.
+과거 공개 커밋과 배포의 노출은 로그인 추가로 해소되지 않습니다.
+
+### DB 및 계정 설정
+
+Supabase SQL Editor에서 sql/step3-auth.sql을 실행합니다. 기존 정수 ID를 UUID로 바꾸며 메모와 owner_id를 보존합니다.
+서버 역할에 CRUD 권한을 주지만 anon/authenticated에는 직접 자료 권한이나 읽기 정책을 주지 않습니다.
+이미 UUID인 테이블에서는 ID를 다시 바꾸지 않습니다. auth.users 외래키를 추가하지 않습니다.
+이전 네 메모의 owner_id가 NULL이면 내 목록에는 나오지 않습니다. 삭제하지 않고 DB에 보존합니다.
+Authentication → Users에서 학습용 A/B 계정을 준비하고 Email 로그인 공급자를 사용합니다. 비밀번호는 공식 화면에서 직접 설정합니다.
+Vercel의 기존 SUPABASE_URL과 SUPABASE_SECRET_KEY는 같은 프로젝트를 가리켜야 합니다.
+public/login-config.json에는 공개용 설정만 넣고 서버 키는 절대 넣지 않습니다.
+
+### 실행과 점검
+
+명령: npm run build -- --local
+정상: 로그인 폼 → A 로그인 → 내 메모 목록 → 가상 메모 추가 → 수정 → 삭제 → 로그아웃 상태.
+거부: 무로그인 모든 자료 경로와 잘못된 토큰은 JSON 오류 401/403이며 자료를 반환하지 않습니다.
+POST /api/notes는 {id?,title,body}를 받고 201 {id}를 반환합니다. id는 UUID이며 생략하면 서버가 만듭니다.
+GET /api/notes는 본인 메모 배열, GET/PUT/DELETE /api/notes/:id는 개별 메모 경로입니다.
+GET 한 건과 PUT 결과는 {id,title,body}, DELETE는 204, 삭제 후 GET은 404입니다.
+로그아웃은 SDK의 현재 세션 로그아웃입니다. 이미 발급된 액세스 토큰은 만료 전까지 유효할 수 있습니다.
+/aleph.json 자동 생성과 nosniff 설정을 유지합니다. 저장점 이후 npm run bundle로 실제 배포 응답을 다시 기록합니다.
+
+| 점검 | 현재 결과 |
+| --- | --- |
+| 로컬 인증 거부/CRUD/입력 위조/오류 응답 | 모의 시험 7개 통과 |
+| 검증 도우미 | 수정하지 않음 |
+| DB UUID 이전 | 실제 DB 메모 4건 UUID 확인, 공개 키 직접 조회 거부 확인 |
+| 실제 A 로그인/로그아웃/CRUD | 미실행 |
+| 실제 B 타인 메모 접근 | 미실행, 소유자 검사 없음 |
+| 3단계 새 배포·무로그인 거부 | 배포 후 확인 필요 |
+
+자기 점검은 심판 판정이 아닙니다. 메모 본문/비밀번호/JWT/서버 키는 제출 묶음에 넣지 않습니다.
