@@ -1,0 +1,19 @@
+{
+  "schema": "aleph.xdr.patterns.v1",
+  "patterns": [
+    {
+      "name": "repeated_password_guessing",
+      "conditions": { "failureCountAtLeast": 30, "ruleLevelAtLeast": 10, "requiresFailureDescription": true },
+      "finding": "같은 출발 주소의 집계된 반복 인증 실패 또는 비밀번호 추측. 짧은 시간 정보가 있으면 추가 근거로 사용하며, 없으면 시간 구간을 추정하지 않는다.",
+      "evidence": "MITRE T1110: 반복적 비밀번호 추측과 대량 인증 실패는 무차별 대입 신호이다. 수치 임계값은 이 학습 경보의 로컬 기준이다.",
+      "source": "https://attack.mitre.org/techniques/T1110/"
+    },
+    {
+      "name": "password_spraying",
+      "conditions": { "accountCountAtLeast": 5, "ruleLevelAtLeast": 10, "requiresSamePasswordDescription": true },
+      "finding": "여러 계정에 같은 비밀번호를 대입했다는 명시적 경보와 다수 계정의 증거를 함께 확인한다. 비밀번호 값 자체는 읽거나 저장하지 않는다.",
+      "evidence": "MITRE T1110.003: 같은 비밀번호 또는 소수 비밀번호를 여러 계정에 시도하는 형태가 Password Spraying이다.",
+      "source": "https://attack.mitre.org/techniques/T1110/003/"
+    }
+  ]
+}

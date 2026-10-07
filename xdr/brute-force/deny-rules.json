@@ -1,0 +1,87 @@
+{
+  "schema": "aleph.xdr.deny.v1",
+  "scope": "local_fixture",
+  "rules": [
+    {
+      "ruleId": "xdr.brute_force.bf_01",
+      "action": "deny",
+      "sourceKey": "d3b59f56246aac749f6783e42ce14172a5e3f79ee957bb579cc9b9b08e389b90",
+      "alertId": "bf-01",
+      "pattern": "repeated_password_guessing",
+      "startsAt": "2026-09-27T00:12:01.000Z",
+      "expiresAt": "2026-09-27T00:27:01.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_02",
+      "action": "deny",
+      "sourceKey": "d3b59f56246aac749f6783e42ce14172a5e3f79ee957bb579cc9b9b08e389b90",
+      "alertId": "bf-02",
+      "pattern": "password_spraying",
+      "startsAt": "2026-09-27T00:12:40.000Z",
+      "expiresAt": "2026-09-27T00:27:40.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_03",
+      "action": "deny",
+      "sourceKey": "ec3017421d511bb27dfefc0de36b64cfa05addb0acc617dbee15050629e426ee",
+      "alertId": "bf-03",
+      "pattern": "repeated_password_guessing",
+      "startsAt": "2026-09-27T00:14:02.000Z",
+      "expiresAt": "2026-09-27T00:29:02.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_04",
+      "action": "deny",
+      "sourceKey": "0486fbe63f2b2aaf5185ff3572efaba67fe162b3cfd2acc96f85a1b37931274a",
+      "alertId": "bf-04",
+      "pattern": "repeated_password_guessing",
+      "startsAt": "2026-09-27T00:20:11.000Z",
+      "expiresAt": "2026-09-27T00:35:11.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_06",
+      "action": "deny",
+      "sourceKey": "718e8a7cad00d86501b94321faaac9c94eb1246bf26e16cafe5b746eebc1b483",
+      "alertId": "bf-06",
+      "pattern": "repeated_password_guessing",
+      "startsAt": "2026-09-27T02:02:15.000Z",
+      "expiresAt": "2026-09-27T02:17:15.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_07",
+      "action": "deny",
+      "sourceKey": "ad63f1fa5c170724752be9ffae462d30c4006d99fe478835aa51aabebc3fc7f3",
+      "alertId": "bf-07",
+      "pattern": "repeated_password_guessing",
+      "startsAt": "2026-09-27T02:05:40.000Z",
+      "expiresAt": "2026-09-27T02:20:40.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_08",
+      "action": "deny",
+      "sourceKey": "0146fdc2eb89ca349a63806006d18b5efe78a8e4f8f47f6afed7c1701beb5e3a",
+      "alertId": "bf-08",
+      "pattern": "repeated_password_guessing",
+      "startsAt": "2026-09-27T04:10:02.000Z",
+      "expiresAt": "2026-09-27T04:25:02.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_09",
+      "action": "deny",
+      "sourceKey": "8f48b7426718d37b33d4dcc80d2da5c52f398680e9506d3319b0e71223436b1e",
+      "alertId": "bf-09",
+      "pattern": "password_spraying",
+      "startsAt": "2026-09-27T05:22:18.000Z",
+      "expiresAt": "2026-09-27T05:37:18.000Z"
+    },
+    {
+      "ruleId": "xdr.brute_force.bf_10",
+      "action": "deny",
+      "sourceKey": "d4b089911938d33c1f9d271002e7b3abb153b3bf24783830c864a2e80428409e",
+      "alertId": "bf-10",
+      "pattern": "repeated_password_guessing",
+      "startsAt": "2026-09-27T06:40:01.000Z",
+      "expiresAt": "2026-09-27T06:55:01.000Z"
+    }
+  ]
+}

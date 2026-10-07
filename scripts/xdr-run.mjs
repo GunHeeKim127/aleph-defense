@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -57,6 +57,21 @@ export async function runXdr({ root, moduleKey, writeError = (line) => console.e
   const outDir = join(root, 'xdr', moduleKey);
   await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+  // 무차별 로그인 모듈이 제공한 후보 연결만 추가 실행하며 다른 모듈과 기존 판정기는 보존합니다.
+  if (moduleKey === 'brute-force') {
+    const connectorPath = join(outDir, 'connect.mjs');
+    let exists = true;
+    try {
+      await access(connectorPath);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      exists = false;
+    }
+    if (exists) {
+      const connector = await import(pathToFileURL(connectorPath).href);
+      await connector.connectResults(fixture, result);
+    }
+  }
   return result;
 }
 
