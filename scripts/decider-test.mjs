@@ -5,6 +5,7 @@ import { fixtureRequests } from './fixture-7.mjs';
 
 const RESPONSE_KEYS = 'decision,reasonCode,requestId,ruleIds,schema';
 
+// 판정 응답의 계약과 규칙 이름이 올바른지 검사합니다.
 function validResponse(request, response, ruleIds) {
   return response && typeof response === 'object' && !Array.isArray(response)
     && Object.keys(response).sort().join(',') === RESPONSE_KEYS
@@ -18,6 +19,7 @@ function validResponse(request, response, ruleIds) {
 }
 
 // Local practice only. The class engine and the server judge validate live requests separately.
+// 가상 요청으로 판정기를 연습하며 실제 심판 판정을 대신하지 않습니다.
 export async function checkDecider({ decide, ruleIds }) {
   if (typeof decide !== 'function' || !Array.isArray(ruleIds)
       || !ruleIds.includes('device_registered')) {

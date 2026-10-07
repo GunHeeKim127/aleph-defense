@@ -17,6 +17,7 @@ const env = {
   VERCEL_URL: 'student-defense-123.vercel.app',
 };
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('build identity uses Vercel Git and deployment metadata', () => {
   assert.deepEqual(deploymentIdentity(env, config), {
     schema: 'aleph.defense.deployment.v1',
@@ -31,6 +32,7 @@ test('build identity uses Vercel Git and deployment metadata', () => {
   assert.throws(() => deploymentIdentity({ ...env, VERCEL_GIT_COMMIT_SHA: 'short' }, config));
 });
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('first attack check reads public data.json without credentials', async () => {
   const originalFetch = globalThis.fetch;
   let requestUrl;

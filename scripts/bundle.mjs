@@ -4,14 +4,18 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+// 저장소 정보를 읽는 Git 명령을 제한된 실행 시간으로 실행합니다.
 const git = (...args) => execFileSync('git', ['-C', root, ...args], {
   encoding: 'utf8', timeout: 5000, maxBuffer: 512 * 1024, windowsHide: true,
   env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' },
 }).trim();
+// 마지막 커밋에 저장된 JSON을 읽어 제출 기준으로 사용합니다.
 const fromCommit = (path) => JSON.parse(git('show', `HEAD:${path}`));
+// 검증 실패 이유를 오류로 전달하고 작업을 중단합니다.
 const fail = (message) => { throw new Error(message); };
 const secretPattern = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\bBearer\s+[A-Za-z0-9._~+/-]{16,}|\bsb_secret_[A-Za-z0-9_-]{12,}|\bsk-[A-Za-z0-9_-]{20,}|\beyJ[A-Za-z0-9_-]{12,}\.eyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{8,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/iu;
 const repository = /^https:\/\/github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)\/([A-Za-z0-9._-]{1,100})\/?$/iu;
+// GitHub HTTPS 저장소 주소를 검사하고 비교 가능한 형태로 정규화합니다.
 const normalizedRepo = value => {
   const match = typeof value === 'string' && value.length <= 250 && repository.exec(value);
   if (!match) fail('GitHub HTTPS 저장소 주소를 origin으로 등록해 주세요.');

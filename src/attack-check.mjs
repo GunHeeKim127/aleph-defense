@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises';
 // 실제 요청의 상태/개수만 기록합니다. 토큰·메모 본문·키를 반환하지 않습니다.
+// 현재 배포에 실제 요청을 보내 상태와 공개 노출 여부를 기록합니다.
 export async function runAttackChecks(config) {
   const app = new URL(config.publicAppUrl);
   if (app.protocol !== 'https:' || app.username || app.password || app.search || app.hash || app.pathname !== '/' || app.hostname.endsWith('.example')) throw new Error('실제 배포 주소가 필요합니다.');
   const results = [];
+  // 자기 점검용 HTTPS 요청을 시간 제한과 함께 보냅니다.
   const request = async (path, options = {}) => fetch(new URL(path, app), { ...options, redirect: 'error', signal: AbortSignal.timeout(10000) });
   const staticResponse = await request('/data.json');
   let count = null;

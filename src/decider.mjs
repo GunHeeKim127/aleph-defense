@@ -3,6 +3,7 @@
 // 요청 본문의 userId, role, 기기 키, 토큰을 별도로 믿거나 저장하지 마세요.
 export const RULE_IDS = Object.freeze(['starter.deny']);
 
+// 시작 틀의 기본 정책으로 모든 요청을 거부하며 응답 계약을 유지합니다.
 export async function decide(request) {
   return {
     schema: 'aleph.decision.v1',

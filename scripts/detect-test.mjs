@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from 'node:util';
 const START = Date.UTC(2026, 9, 1, 0, 0, 0);
 const subject = 'learner_fixture';
 
+// 탐지 연습에 사용할 가상 조회 사건들을 만듭니다.
 function reads(count, { intervalSeconds = 2, owner = subject, start = START } = {}) {
   return Array.from({ length: count }, (_, index) => ({
     at: new Date(start + index * intervalSeconds * 1000).toISOString(),
@@ -27,6 +28,7 @@ const cases = [
 ];
 
 // This is a practice contract, not a live engine assertion or judge score.
+// 가상 사건의 경계 조건을 확인하며 실제 접속 회수 여부는 검사하지 않습니다.
 export async function checkDetection(detect) {
   if (typeof detect !== 'function') throw new TypeError('src/detect.mjs에서 detect 함수를 내보내야 합니다.');
   const results = [];

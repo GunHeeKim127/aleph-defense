@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const MODULE_KEYS = ['brute-force', 'web-injection', 'known-cve', 'persistence', 'privilege', 'exfiltration'];
 const ACTIONS = new Set(['block', 'alert', 'record']);
 
+// XDR 응답의 행동과 확신도 및 이유 형식을 검사합니다.
 export function isDecision(value) {
   return Boolean(value)
     && typeof value === 'object'
@@ -17,6 +18,7 @@ export function isDecision(value) {
     && typeof value.reason === 'string';
 }
 
+// 가상 경보에 판정 함수를 실행하고 결과 파일을 기록합니다.
 export async function runXdr({ root, moduleKey, writeError = (line) => console.error(line) }) {
   if (!MODULE_KEYS.includes(moduleKey)) {
     throw new Error('moduleKey 가 없습니다. brute-force, web-injection, known-cve, persistence, privilege, exfiltration 중 하나를 넣습니다.');

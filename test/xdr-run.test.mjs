@@ -10,6 +10,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MODULE_KEYS = ['brute-force', 'web-injection', 'known-cve', 'persistence', 'privilege', 'exfiltration'];
 const DOC_IP = /^(192\.0\.2|198\.51\.100|203\.0\.113)\.(?:[1-9]|[1-9]\d|1\d\d|2(?:[0-4]\d|5[0-5]))$/;
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('경보 묶음은 정답 없이 20건에서 40건입니다', async () => {
   for (const moduleKey of MODULE_KEYS) {
     const fixture = JSON.parse(await readFile(join(root, 'xdr', 'fixtures', `${moduleKey}.json`), 'utf8'));
@@ -34,6 +35,7 @@ test('경보 묶음은 정답 없이 20건에서 40건입니다', async () => {
   assert.equal(cve.includes('${jndi:ldap://') && cve.includes('jndi:rmi'), false);
 });
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('가짜 decide 가 result.json 형식과 건수를 만듭니다', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'xdr-run-'));
   try {
@@ -41,6 +43,7 @@ test('가짜 decide 가 result.json 형식과 건수를 만듭니다', async () 
     await mkdir(join(dir, 'xdr', 'fixtures'), { recursive: true });
     await mkdir(join(dir, 'xdr', 'brute-force'), { recursive: true });
     await cp(join(root, 'scripts', 'xdr-run.mjs'), join(dir, 'scripts', 'xdr-run.mjs'));
+    // 각 가상 경보의 시험 입력을 구성합니다.
     const alerts = ['a-block', 'a-alert', 'a-record', 'a-bad', 'a-throw'].map((id) => ({
       id,
       timestamp: '2026-09-27T09:00:00+09:00',
@@ -52,6 +55,7 @@ test('가짜 decide 가 result.json 형식과 건수를 만듭니다', async () 
       schema: 'aleph.xdr.fixture.v1', moduleKey: 'brute-force', alerts,
     }, null, 2)}\n`);
     await writeFile(join(dir, 'xdr', 'brute-force', 'decide.mjs'), `
+      // 시작 틀의 기본 정책으로 모든 요청을 거부하며 응답 계약을 유지합니다.
       export async function decide(alert) {
         if (alert.id === 'a-bad') return { action: 'ignore', confidence: 2, reason: '틀림' };
         if (alert.id === 'a-throw') throw new Error('학생 코드 오류');
@@ -63,6 +67,7 @@ test('가짜 decide 가 result.json 형식과 건수를 만듭니다', async () 
     const child = spawn(process.execPath, ['scripts/xdr-run.mjs', 'brute-force'], { cwd: dir, windowsHide: true });
     let stderr = '';
     child.stderr.on('data', (chunk) => { stderr += chunk; });
+    // 시험용 자식 프로세스가 끝날 때까지 기다리고 종료 코드를 받습니다.
     const code = await new Promise((resolvePromise, reject) => {
       child.on('error', reject);
       child.on('exit', resolvePromise);
@@ -83,6 +88,7 @@ test('가짜 decide 가 result.json 형식과 건수를 만듭니다', async () 
   }
 });
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('실행기는 네트워크 모듈을 부르지 않습니다', async () => {
   const source = await readFile(join(root, 'scripts', 'xdr-run.mjs'), 'utf8');
   assert.equal(/from ['"]node:(?:http|https|net|dns)['"]|fetch\(/.test(source), false);

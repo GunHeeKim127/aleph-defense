@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { createLoginVerifier } from './verify-login.mjs';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// 로그인과 소유자 검사 후 본인 메모만 처리하는 서버 API를 만듭니다.
 export function createNotesHandler({ config, single = false, env = process.env,
   fetchImpl = (...args) => fetch(...args), verifierFactory = createLoginVerifier } = {}) {
   let verify;
+  // 요청 방식과 인증 및 소유자를 검사한 뒤 메모 작업을 처리합니다.
   return async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
+    // 메모 본문이나 내부 설정 없이 상태 코드와 JSON 오류를 반환합니다.
     const error = (status, message) => res.status(status).json({ error: message });
     if (!req.headers?.authorization) return error(401, '로그인이 필요합니다.');
     let identity;
@@ -78,6 +81,7 @@ export function createNotesHandler({ config, single = false, env = process.env,
       if (rows.some(row => row.owner_id !== identity.userId)) throw new Error();
       if (req.method === 'POST') return res.status(201).json({ id: payload.id });
       if (req.method === 'DELETE') return res.status(204).end();
+      // 응답에서 소유자 정보와 내부 필드를 제외하고 메모 공개 필드만 남깁니다.
       const clean = rows.map(({ id, title, body }) => ({ id, title, body }));
       return res.status(200).json(single ? clean[0] : clean);
     } catch { return error(503, '자료를 처리할 수 없습니다.'); }

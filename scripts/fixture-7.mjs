@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Local practice requests use the engine's public input shape. The judge sends and times its own events.
+// 공개 계약에 맞는 가상 판정 요청을 만듭니다.
 const request = (signals, recentEvents) => ({
   schema: 'aleph.decision.v1', requestId: randomUUID(), classId: 'class_fixture',
   projectId: 'project_fixture', subjectId: 'learner_fixture', deviceId: 'a'.repeat(16),
@@ -11,6 +12,7 @@ const request = (signals, recentEvents) => ({
   at: new Date().toISOString(), policyRevision: 1, deviceRegistered: true,
   stepUp: { verified: false, authAgeSeconds: null }, recentEvents, signals,
 });
+// 정상 및 이상 신호가 포함된 판정 연습 요청을 만듭니다.
 export function fixtureRequests() {
   return {
     normal: request({ source: 'judge_fixture', region: 'local', network: 'usual', hour: 14 }, []),
@@ -18,6 +20,7 @@ export function fixtureRequests() {
       [{ kind: 'risk_signal', ageSeconds: 60, count: 20 }]),
   };
 }
+// 연습 판정 응답이 요청과 응답 계약을 따르는지 확인합니다.
 const check = (input, output) => output && typeof output === 'object'
   && Object.keys(output).sort().join(',') === 'decision,reasonCode,requestId,ruleIds,schema'
   && output.schema === 'aleph.decision.v1' && output.requestId === input.requestId

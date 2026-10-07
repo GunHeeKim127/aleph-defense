@@ -5,6 +5,7 @@ import { test } from 'node:test';
 
 const baseline = JSON.parse(await readFile(new URL('../package/baseline-functions.json', import.meta.url)));
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('패키징 함수 기준표는 시작 틀의 실제 API와 일치한다', async () => {
   const actual = (await readdir(new URL('../api/', import.meta.url)))
     .filter(name => /\.(?:m?js|ts)$/u.test(name))
@@ -16,6 +17,7 @@ test('패키징 함수 기준표는 시작 틀의 실제 API와 일치한다', a
   assert.deepEqual(actual, [...baseline.functions, ...baseline.allowedNew].sort());
 });
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('미구현 서버 뼈대는 성공이나 로그인 통과로 가장하지 않는다', async () => {
   for (const name of ['ai', 'threat-intel']) {
     const { default: handler } = await import(`../api/${name}.js`);
@@ -32,6 +34,7 @@ test('미구현 서버 뼈대는 성공이나 로그인 통과로 가장하지 �
   }
 });
 
+// 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('P7 시작 틀 안내는 실제 빌드 조건과 새 배포 시험에 맞는다', async () => {
   const readme = await readFile(new URL('../package/README.md', import.meta.url), 'utf8');
   const selfCheck = await readFile(new URL('../package/SELF-CHECK.md', import.meta.url), 'utf8');

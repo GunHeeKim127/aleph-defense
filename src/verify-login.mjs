@@ -6,6 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const BEARER = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/u;
 
+// 발급자 주소가 허용된 공개 HTTPS 주소와 경로인지 검사합니다.
 function httpsUrl(value, path) {
   if (typeof value !== 'string' || value !== value.trim()) throw new TypeError('invalid_login_issuer');
   let url;
@@ -21,6 +22,7 @@ function httpsUrl(value, path) {
   return url;
 }
 
+// 학생 및 심판 발급자 설정을 검증하고 검증에 필요한 주소를 구성합니다.
 function verifiedConfig(config) {
   const judge = httpsUrl(config?.judgeIssuer, '/defense/judge');
   const app = httpsUrl(config?.publicAppUrl, '/');
@@ -39,6 +41,7 @@ function verifiedConfig(config) {
 
 // Create once in the server runtime. The judge intake separately compares the
 // checked-in judgeIssuer to its registered operator issuer before any attack.
+// 신뢰할 발급자와 공개 키를 사용해 토큰 검증 함수를 구성합니다.
 export function createLoginVerifier({ config, supabaseSecretKey, judgeKeySet,
   supabaseClient } = {}) {
   const bound = verifiedConfig(config);
