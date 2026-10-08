@@ -226,6 +226,18 @@ respond.mjs는 block 후보만 만료 규칙으로 만들고 alert를 한 줄씩
 차단 후보는 경보를 처리한 시각부터 15분 동안 유효하며, 같은 출발 주소가 계정을 바꿔도 추가 거부합니다.
 상세 구조와 남은 연결 사항은 [보너스 설명](xdr/brute-force/README.md)을 확인하세요.
 
+## 보너스 xdr-02 저장점
+
+웹 주입 모듈은 xdr/fixtures/web-injection.json의 가상 Wazuh 경보를 읽어 SQL 구문, 스크립트 삽입,
+상위 경로 반복을 MITRE ATT&CK T1190 기반 패턴으로 판정합니다. 원본 경보와 src/decider.mjs는 변경하지 않았습니다.
+read-alerts.mjs는 확인용 다섯 필드만 출력하며 decide.mjs와 분리되어 있습니다.
+decide.mjs는 import·파일 접근·네트워크 없이 한 파일에서 즉시 block·alert·record를 반환합니다.
+respond.mjs는 재검증된 block 후보만 15분 거부 규칙으로 만들고 alert만 xdr/alerts.log에 누적합니다.
+실행: `npm run xdr:run -- web-injection`. 검사: `node --test test/web-injection.test.mjs test/xdr-run.test.mjs`.
+가상 경보 26건과 추출 26줄이 일치하며 block 8 · alert 9 · record 9, 정상 이벤트 block 0건입니다.
+허용 모의 기본 판정기를 사용한 추가 어댑터 시험에서 공격 주소는 거부되고 정상 주소는 통과했습니다.
+이는 로컬 가상 시험이며 실제 운영 연결이나 심판 판정 결과를 뜻하지 않습니다.
+
 ## 코드 설명 읽기
 
 함수 위의 한국어 주석에서 역할을 확인할 수 있습니다. JSON은 주석을 허용하지 않으므로 [JSON 항목 묶음 설명](docs/JSON_COMMENTS.md)을 함께 읽으세요.

@@ -57,21 +57,19 @@ export async function runXdr({ root, moduleKey, writeError = (line) => console.e
   const outDir = join(root, 'xdr', moduleKey);
   await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
-  // 무차별 로그인 판단 뒤 후처리만 respond.mjs에 맡기며 decide.mjs는 파일을 쓰지 않습니다.
-  if (moduleKey === 'brute-force') {
-    const responderPath = join(outDir, 'respond.mjs');
-    let exists = true;
-    try {
-      await access(responderPath);
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-      exists = false;
-    }
-    if (exists) {
-      const responder = await import(pathToFileURL(responderPath).href);
-      if (typeof responder.respond !== 'function') throw new Error('respond 함수를 내보내지 않았습니다.');
-      await responder.respond(fixture, result);
-    }
+  // 모듈에 respond.mjs가 있으면 판정 뒤 파일 기록과 추가 거부 연결만 맡깁니다.
+  const responderPath = join(outDir, 'respond.mjs');
+  let hasResponder = true;
+  try {
+    await access(responderPath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    hasResponder = false;
+  }
+  if (hasResponder) {
+    const responder = await import(pathToFileURL(responderPath).href);
+    if (typeof responder.respond !== 'function') throw new Error('respond 함수를 내보내지 않았습니다.');
+    await responder.respond(fixture, result);
   }
   return result;
 }
