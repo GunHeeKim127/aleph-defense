@@ -60,14 +60,15 @@ test('deny candidates have evidence and expiry; overlay preserves baseline and n
   try {
     const result = { decisions: await Promise.all(fixture.alerts.map(async a => ({ alertId:a.id, ...await decide(a) }))) };
     const rulesFile=join(dir,'rules.json'), alertsFile=join(dir,'alerts.log');
-    const rules=await connectResults(fixture,result,{rulesFile,alertsFile});
+    const ingestedAt=Date.parse('2026-10-08T00:00:00.000Z');
+    const rules=await connectResults(fixture,result,{rulesFile,alertsFile,clock:()=>ingestedAt});
     assert(rules.length > 0);
     assert(rules.every(r => Date.parse(r.expiresAt) - Date.parse(r.startsAt) === 900000));
     const log=(await readFile(alertsFile,'utf8')).trim().split('\n');
     assert.equal(log.length,result.decisions.filter(d=>d.action==='alert').length);
     assert(!log.join('').includes('srcuser'));
-    const alert=fixture.alerts[0]; const at=Date.parse(alert.timestamp)+1000;
-    const mapping=id=>id==='fixture-attack'?{sourceAddress:alert.data.srcip,account:alert.data.srcuser}
+    const alert=fixture.alerts[0]; const at=ingestedAt+1000;
+    const mapping=id=>id==='fixture-attack'?{sourceAddress:alert.data.srcip,account:'different-account'}
       :{sourceAddress:'192.0.2.60',account:'user01'};
     const request={schema:'aleph.decision.v1',requestId:'test-request',subjectId:'fixture-attack'};
     const baseDecide=async r=>({schema:r.schema,requestId:r.requestId,decision:'allow',reasonCode:'approved',ruleIds:[]});
@@ -77,14 +78,14 @@ test('deny candidates have evidence and expiry; overlay preserves baseline and n
     const expiredAt=Math.max(...rules.map(rule=>Date.parse(rule.expiresAt)))+1;
     const expired=createXdrDecider({baseDecide,resolveSubject:mapping,clock:()=>expiredAt,rulesFile});
     assert.equal((await expired(request)).decision,'allow');
-    const before=createXdrDecider({baseDecide,resolveSubject:mapping,clock:()=>at-2000,rulesFile});
+    const before=createXdrDecider({baseDecide,resolveSubject:mapping,clock:()=>ingestedAt-1,rulesFile});
     assert.equal((await before(request)).decision,'allow');
     const preserved=createXdrDecider({baseDecide:originalDecide,resolveSubject:mapping,clock:()=>at,rulesFile});
     assert.deepEqual(await preserved({...request,subjectId:'fixture-normal'}),await originalDecide(request));
     assert.throws(()=>createXdrDecider({baseDecide}),/trusted_mapping_required/);
     // Jev 점수만 높고 명확한 패턴 근거가 없는 경보는 자동 규칙으로 승격하지 않습니다.
     const ambiguous=fixture.alerts[10];
-    const rejected=await connectResults({alerts:[ambiguous]}, {decisions:[{alertId:ambiguous.id,action:'block',confidence:0.99}]}, {rulesFile,alertsFile});
+    const rejected=await connectResults({alerts:[ambiguous]}, {decisions:[{alertId:ambiguous.id,action:'block',confidence:0.99}]}, {rulesFile,alertsFile,clock:()=>ingestedAt});
     assert.equal(rejected.length,0);
   } finally { await rm(dir,{recursive:true,force:true}); }
 });
