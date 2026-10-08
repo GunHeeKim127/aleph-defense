@@ -54,6 +54,26 @@ test('fixture replay records normal events, blocks clear evidence, alerts ambigu
   assert.equal(outcomes[19].action, 'record');
 });
 
+// 심판처럼 decide.mjs 한 파일만 빈 폴더에 복사해도 import와 판정이 끝나는지 확인합니다.
+test('decide is a standalone offline module', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bf-isolated-'));
+  try {
+    const source = await readFile(new URL('../xdr/brute-force/decide.mjs', import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /^\s*import\s/m);
+    assert.doesNotMatch(source, /node:|readFile|writeFile|fetch\s*\(|process\.env|setTimeout/);
+    const isolatedFile = join(dir, 'decide.mjs');
+    const { writeFile } = await import('node:fs/promises');
+    await writeFile(isolatedFile, source, 'utf8');
+    const isolated = await import(`${new URL(`file:///${isolatedFile.replace(/\\/g, '/')}`).href}?judge=1`);
+    assert.equal(typeof isolated.decide, 'function');
+    const outcomes = await Promise.all(fixture.alerts.map(alert => isolated.decide(alert)));
+    assert.equal(outcomes[0].action, 'block');
+    assert.equal(outcomes[4].action, 'block');
+    assert.equal(outcomes[10].action, 'alert');
+    assert.equal(outcomes[19].action, 'record');
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
 // 만료·시작 시각·정상 신원·기존 판정 보존을 모두 검사합니다. 실제 운영 연결 시험이 아닙니다.
 test('deny candidates have evidence and expiry; overlay preserves baseline and normal flow', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'bf-test-'));

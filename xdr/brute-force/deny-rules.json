@@ -8,8 +8,8 @@
       "sourceKey": "a228fd8cf9faa4fccea09b1ba52e45e4bd05255ccdf4ec62fca876e9db2018c9",
       "alertId": "bf-01",
       "pattern": "repeated_password_guessing",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_02",
@@ -17,8 +17,8 @@
       "sourceKey": "a228fd8cf9faa4fccea09b1ba52e45e4bd05255ccdf4ec62fca876e9db2018c9",
       "alertId": "bf-02",
       "pattern": "password_spraying",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_03",
@@ -26,8 +26,8 @@
       "sourceKey": "28f569217f37fef1ea4b72e5c1c98a4a86d776a5120c2544e3b4b122362d784a",
       "alertId": "bf-03",
       "pattern": "repeated_password_guessing",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_04",
@@ -35,8 +35,8 @@
       "sourceKey": "25f2801671bc06733c30d724bbda48263dbeaf5469d5f5df3e6c15b1f76ddc73",
       "alertId": "bf-04",
       "pattern": "repeated_password_guessing",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_05",
@@ -44,8 +44,8 @@
       "sourceKey": "ad6c80f10aac5af66ab952b73d43a63ad716b2f8ae2b647652cb72f483293a51",
       "alertId": "bf-05",
       "pattern": "password_spraying",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_06",
@@ -53,8 +53,8 @@
       "sourceKey": "3a5fffe689abe595ebabc5eb095c6cffc098ff91a72c171d89bf8afa2bb94e2e",
       "alertId": "bf-06",
       "pattern": "repeated_password_guessing",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_07",
@@ -62,8 +62,8 @@
       "sourceKey": "df670905086e47ae98fb796c61e67363219074a1122934262b0a15fe8e6a99c9",
       "alertId": "bf-07",
       "pattern": "repeated_password_guessing",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_08",
@@ -71,8 +71,8 @@
       "sourceKey": "aa0eabce6b02a3043303a85ac020fb16a0c5b031926c42edc38cb2b9e8d4a917",
       "alertId": "bf-08",
       "pattern": "repeated_password_guessing",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_09",
@@ -80,8 +80,8 @@
       "sourceKey": "6854aa9bc9c8215af873938340acdb185fd84955298f080c4b90a105792d4292",
       "alertId": "bf-09",
       "pattern": "password_spraying",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     },
     {
       "ruleId": "xdr.brute_force.bf_10",
@@ -89,8 +89,8 @@
       "sourceKey": "4cdeb75108353ade71606e3169d66bebc95668e9d862eeaa46eade90aee9697a",
       "alertId": "bf-10",
       "pattern": "repeated_password_guessing",
-      "startsAt": "2026-10-08T02:21:43.461Z",
-      "expiresAt": "2026-10-08T02:36:43.461Z"
+      "startsAt": "2026-10-08T02:51:31.013Z",
+      "expiresAt": "2026-10-08T03:06:31.013Z"
     }
   ]
 }
