@@ -57,19 +57,20 @@ export async function runXdr({ root, moduleKey, writeError = (line) => console.e
   const outDir = join(root, 'xdr', moduleKey);
   await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
-  // 무차별 로그인 모듈이 제공한 후보 연결만 추가 실행하며 다른 모듈과 기존 판정기는 보존합니다.
+  // 무차별 로그인 판단 뒤 후처리만 respond.mjs에 맡기며 decide.mjs는 파일을 쓰지 않습니다.
   if (moduleKey === 'brute-force') {
-    const connectorPath = join(outDir, 'connect.mjs');
+    const responderPath = join(outDir, 'respond.mjs');
     let exists = true;
     try {
-      await access(connectorPath);
+      await access(responderPath);
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
       exists = false;
     }
     if (exists) {
-      const connector = await import(pathToFileURL(connectorPath).href);
-      await connector.connectResults(fixture, result);
+      const responder = await import(pathToFileURL(responderPath).href);
+      if (typeof responder.respond !== 'function') throw new Error('respond 함수를 내보내지 않았습니다.');
+      await responder.respond(fixture, result);
     }
   }
   return result;

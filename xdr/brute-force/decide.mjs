@@ -1,8 +1,17 @@
 // 심판은 이 파일 하나만 인터넷 없는 격리 환경에서 불러옵니다.
 // MITRE ATT&CK T1110을 근거로 한 학습용 임계값을 파일 안에 고정합니다.
 const PATTERNS = Object.freeze({
-  repeated_password_guessing: Object.freeze({ failureCountAtLeast: 30, ruleLevelAtLeast: 10 }),
-  password_spraying: Object.freeze({ accountCountAtLeast: 5, massAccountCountAtLeast: 10, ruleLevelAtLeast: 10 }),
+  repeated_password_guessing: Object.freeze({
+    name: 'repeated_password_guessing',
+    conditions: Object.freeze({ failureCountAtLeast: 30, ruleLevelAtLeast: 10, requiresFailureDescription: true }),
+    evidence: 'MITRE T1110: 반복적 비밀번호 추측과 대량 인증 실패는 무차별 대입 신호이다.',
+  }),
+  password_spraying: Object.freeze({
+    name: 'password_spraying',
+    conditions: Object.freeze({ accountCountAtLeast: 5, massAccountCountAtLeast: 10,
+      ruleLevelAtLeast: 10, requiresFailureDescription: true }),
+    evidence: 'MITRE T1110/T1110.003: 여러 계정에 같은 비밀번호를 시도하는 것은 Password Spraying 신호이다.',
+  }),
 });
 
 function nonNegativeInteger(value) {
@@ -56,8 +65,8 @@ export function decide(alert) {
     describedNumber(description, /실패\s*(\d+)건/),
   );
   const accounts = accountCount(alert, description);
-  const spray = PATTERNS.password_spraying;
-  const guessing = PATTERNS.repeated_password_guessing;
+  const spray = PATTERNS.password_spraying.conditions;
+  const guessing = PATTERNS.repeated_password_guessing.conditions;
   const explicitSpray = /같은 비밀번호/.test(description)
     && (accounts >= spray.accountCountAtLeast || /여러 계정|서로 다른 계정/.test(description));
   const massAccountFailures = failure && accounts >= spray.massAccountCountAtLeast

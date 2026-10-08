@@ -7,7 +7,7 @@ import { readAlerts, extractAlert } from '../xdr/brute-force/read-alerts.mjs';
 import { decide } from '../xdr/brute-force/decide.mjs';
 import { decision } from '../xdr/brute-force/classify.mjs';
 import { askJev } from '../xdr/brute-force/jev.mjs';
-import { connectResults, createXdrDecider } from '../xdr/brute-force/connect.mjs';
+import { respond, createXdrDecider } from '../xdr/brute-force/respond.mjs';
 import { decide as originalDecide } from '../src/decider.mjs';
 
 const fixture = JSON.parse(await readFile(new URL('../xdr/fixtures/brute-force.json', import.meta.url), 'utf8'));
@@ -81,7 +81,7 @@ test('deny candidates have evidence and expiry; overlay preserves baseline and n
     const result = { decisions: await Promise.all(fixture.alerts.map(async a => ({ alertId:a.id, ...await decide(a) }))) };
     const rulesFile=join(dir,'rules.json'), alertsFile=join(dir,'alerts.log');
     const ingestedAt=Date.parse('2026-10-08T00:00:00.000Z');
-    const rules=await connectResults(fixture,result,{rulesFile,alertsFile,clock:()=>ingestedAt});
+    const rules=await respond(fixture,result,{rulesFile,alertsFile,clock:()=>ingestedAt});
     assert(rules.length > 0);
     assert(rules.every(r => Date.parse(r.expiresAt) - Date.parse(r.startsAt) === 900000));
     const log=(await readFile(alertsFile,'utf8')).trim().split('\n');
@@ -105,7 +105,7 @@ test('deny candidates have evidence and expiry; overlay preserves baseline and n
     assert.throws(()=>createXdrDecider({baseDecide}),/trusted_mapping_required/);
     // Jev 점수만 높고 명확한 패턴 근거가 없는 경보는 자동 규칙으로 승격하지 않습니다.
     const ambiguous=fixture.alerts[10];
-    const rejected=await connectResults({alerts:[ambiguous]}, {decisions:[{alertId:ambiguous.id,action:'block',confidence:0.99}]}, {rulesFile,alertsFile,clock:()=>ingestedAt});
+    const rejected=await respond({alerts:[ambiguous]}, {decisions:[{alertId:ambiguous.id,action:'block',confidence:0.99}]}, {rulesFile,alertsFile,clock:()=>ingestedAt});
     assert.equal(rejected.length,0);
   } finally { await rm(dir,{recursive:true,force:true}); }
 });
