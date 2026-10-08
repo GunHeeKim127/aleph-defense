@@ -19,9 +19,13 @@ export function matchAlert(alert) {
   if (row.level === null || row.timestamp === null || row.sourceAddress === '[redacted]' || row.account === '[redacted]') {
     return { row, pattern: 'repeated_password_guessing', confidence: null, evidence: 'insufficient_fields' };
   }
-  if (row.level >= sprayed.ruleLevelAtLeast && /같은 비밀번호/.test(row.description)
-      && (accountCount >= sprayed.accountCountAtLeast || /여러 계정/.test(row.description))) {
-    return { row, pattern: 'password_spraying', confidence: 0.96, evidence: 'explicit_spray' };
+  const explicitSpray = /같은 비밀번호/.test(row.description)
+    && (accountCount >= sprayed.accountCountAtLeast || /여러 계정/.test(row.description));
+  const massAccountFailures = failure && accountCount >= sprayed.massAccountCountAtLeast
+    && /같은 주소/.test(row.description);
+  if (row.level >= sprayed.ruleLevelAtLeast && (explicitSpray || massAccountFailures)) {
+    return { row, pattern: 'password_spraying', confidence: explicitSpray ? 0.96 : 0.9,
+      evidence: explicitSpray ? 'explicit_spray' : 'mass_account_failures' };
   }
   if (failure && row.level >= guessed.ruleLevelAtLeast && count >= guessed.failureCountAtLeast) {
     return { row, pattern: 'repeated_password_guessing', confidence: 0.95, evidence: 'high_failure_volume' };

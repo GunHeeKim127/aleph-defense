@@ -10,9 +10,9 @@
     },
     {
       "name": "password_spraying",
-      "conditions": { "accountCountAtLeast": 5, "ruleLevelAtLeast": 10, "requiresSamePasswordDescription": true },
-      "finding": "여러 계정에 같은 비밀번호를 대입했다는 명시적 경보와 다수 계정의 증거를 함께 확인한다. 비밀번호 값 자체는 읽거나 저장하지 않는다.",
-      "evidence": "MITRE T1110.003: 같은 비밀번호 또는 소수 비밀번호를 여러 계정에 시도하는 형태가 Password Spraying이다.",
+      "conditions": { "accountCountAtLeast": 5, "massAccountCountAtLeast": 10, "ruleLevelAtLeast": 10, "requiresFailureDescription": true },
+      "finding": "여러 계정에 같은 비밀번호를 대입했다는 명시적 경보 또는 같은 주소에서 10개 이상 계정에 반복된 로그인 실패를 확인한다. 비밀번호 값 자체는 읽거나 저장하지 않는다.",
+      "evidence": "MITRE T1110/T1110.003: 짧은 간격의 다수 계정 인증 실패와 같은 비밀번호의 계정군 시도는 무차별 대입·Password Spraying 신호이다.",
       "source": "https://attack.mitre.org/techniques/T1110/003/"
     }
   ]

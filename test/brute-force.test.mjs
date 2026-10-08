@@ -49,6 +49,7 @@ test('fixture replay records normal events, blocks clear evidence, alerts ambigu
   }
   assert(counts.block > 0 && counts.alert > 0 && counts.record > 0);
   assert.equal(outcomes[0].action, 'block');
+  assert.equal(outcomes[4].action, 'block');
   assert.equal(outcomes[10].action, 'alert');
   assert.equal(outcomes[19].action, 'record');
 });

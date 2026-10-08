@@ -39,6 +39,15 @@
       "expiresAt": "2026-09-27T00:35:11.000Z"
     },
     {
+      "ruleId": "xdr.brute_force.bf_05",
+      "action": "deny",
+      "sourceKey": "1b8129e6d9ee3160b83dea883908c43a81fb5e3d307096059084b0314c831db7",
+      "alertId": "bf-05",
+      "pattern": "password_spraying",
+      "startsAt": "2026-09-27T00:21:00.000Z",
+      "expiresAt": "2026-09-27T00:36:00.000Z"
+    },
+    {
       "ruleId": "xdr.brute_force.bf_06",
       "action": "deny",
       "sourceKey": "718e8a7cad00d86501b94321faaac9c94eb1246bf26e16cafe5b746eebc1b483",

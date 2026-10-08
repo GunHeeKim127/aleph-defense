@@ -28,8 +28,8 @@
     },
     {
       "alertId": "bf-05",
-      "action": "alert",
-      "confidence": 0.6,
+      "action": "block",
+      "confidence": 0.9,
       "reason": "password_spraying"
     },
     {
@@ -172,8 +172,8 @@
     }
   ],
   "counts": {
-    "block": 9,
-    "alert": 10,
+    "block": 10,
+    "alert": 9,
     "record": 9
   }
 }
