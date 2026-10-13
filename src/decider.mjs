@@ -9,16 +9,15 @@ function hasResourceZoneAccess(request) {
       || typeof request.method !== 'string' || typeof request.route !== 'string'
       || typeof request.path !== 'string') return false;
   const segments = request.path.split('/');
-  if (segments.length !== 4 || segments[0] !== ''
+  if (segments.length !== 3 || segments[0] !== ''
       || !/^[a-zA-Z0-9_-]{1,128}$/u.test(segments[2])
-      || !/^[a-zA-Z0-9_-]{1,128}$/u.test(segments[3])
       || segments[2] !== request.subjectId) return false;
   const zone = segments[1];
   if (zone === 'notes' && ['GET', 'PUT'].includes(request.method)) {
-    return request.route === `${request.method} /notes/:ownerId/:id`;
+    return request.route === `${request.method} /notes/:id`;
   }
   if (zone === 'announcements' && request.method === 'PUT') {
-    return request.route === 'PUT /announcements/:ownerId/:id';
+    return request.route === 'PUT /announcements/:id';
   }
   return false;
 }

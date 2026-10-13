@@ -308,9 +308,10 @@ flowchart LR
 시작 커밋은 `065d54b 7단계 저장점`이며 README 단계 기록과 일치했고 Git 상태는 깨끗했습니다.
 기존 자료실 주소와 메모 CRUD 화면, `device_registered`, `step_up_required` 규칙은 유지합니다.
 메모와 강사 공지는 각각 `note:<uuid>`, `announcement:<uuid>` 자원 ID로 구별하며 화면 메뉴는 추가하지 않습니다.
+첫 제출의 두 단계 자원 경로는 심판 계약보다 깊어 정상 요청을 막았으므로, 피드백 `S08_OWN_BROKEN`·`S08_OTHER_ZONE_ALLOWED`에 따라 기존 `/notes/:id`·`/announcements/:id` 깊이로 교정했습니다.
 
 판정기는 계약에 있는 `subjectId`, `deviceRegistered`, `method`, `route`, `path`, `queryLength`만 사용합니다.
-자기 메모 경로는 `/notes/:ownerId/:id`, 강사 공지 경로는 `/announcements/:ownerId/:id`이며 실제 경로의 소유자 구간이 `subjectId`와 정확히 같아야 합니다.
+자기 메모 경로는 `/notes/:id`, 강사 공지 경로는 `/announcements/:id`이며 실제 경로의 자원 ID가 `subjectId`와 정확히 같아야 합니다.
 메모 GET·PUT과 공지 PUT만 구역 규칙으로 허용하고, 쿼리가 있거나 경로·메서드·route가 다르면 `deny · resource_not_allowed`입니다.
 `:id`와 같은 깊이에 `export` 같은 기능 경로를 만들지 않았으며 알 수 없는 경로는 기본 거부합니다.
 
@@ -325,7 +326,7 @@ flowchart TD
   B -->|아니오| C[deny: device_not_registered]
   B -->|예| D{method + route + path가 알려진 구역인가}
   D -->|아니오| E[deny: resource_not_allowed]
-  D -->|예| F{path의 ownerId = subjectId인가}
+  D -->|예| F{path의 자원 ID = subjectId인가}
   F -->|아니오| E
   F -->|예| G{복합 이상 신호인가}
   G -->|예, 재확인 전| H[step_up: step_up_required]
