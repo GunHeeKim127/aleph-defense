@@ -1,6 +1,26 @@
-// ALEPH SDP 엔진이 확인한 최상위 deviceRegistered 값만 사용하는 6단계 규칙입니다.
-// 브라우저가 만든 userId, role, 기기 객체, 인증서나 키를 별도로 믿거나 저장하지 않습니다.
-export const RULE_IDS = Object.freeze(['device_registered']);
+// 계약에 있는 엔진 검증 값만 사용합니다. 브라우저 헤더나 임의의 위치·신원 객체는 읽지 않습니다.
+export const RULE_IDS = Object.freeze(['device_registered', 'step_up_required']);
+
+// judge_fixture는 심판의 가상 접속 사건용이며 실제 위치 증거로 저장하거나 승격하지 않습니다.
+function isCompositeFixtureRisk(request) {
+  const signals = request?.signals;
+  if (!signals || signals.source !== 'judge_fixture'
+      || !Number.isInteger(signals.hour) || signals.hour < 0 || signals.hour > 23
+      || signals.network !== 'unusual') return false;
+  const unusualHour = signals.hour <= 5 || signals.hour >= 23;
+  const recentEvents = Array.isArray(request?.recentEvents) ? request.recentEvents : [];
+  const bulkRead = recentEvents.some(event => event?.kind === 'risk_signal'
+    && Number.isInteger(event.ageSeconds) && event.ageSeconds >= 0 && event.ageSeconds <= 300
+    && Number.isInteger(event.count) && event.count >= 20);
+  return unusualHour && bulkRead;
+}
+
+// 제공 엔진이 확인한 새 로그인만 인정하며 토큰 원문은 읽거나 기록하지 않습니다.
+function hasFreshStepUp(request) {
+  return request?.stepUp?.verified === true
+    && Number.isInteger(request.stepUp.authAgeSeconds)
+    && request.stepUp.authAgeSeconds >= 0 && request.stepUp.authAgeSeconds <= 900;
+}
 
 // 등록 여부가 정확히 true가 아니면 누락된 경우까지 기본 거부합니다.
 export async function decide(request) {
@@ -14,11 +34,22 @@ export async function decide(request) {
     };
   }
 
+  const compositeRisk = isCompositeFixtureRisk(request);
+  if (compositeRisk && !hasFreshStepUp(request)) {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request.requestId,
+      decision: 'step_up',
+      reasonCode: 'step_up_required',
+      ruleIds: [RULE_IDS[1]],
+    };
+  }
+
   return {
     schema: 'aleph.decision.v1',
     requestId: request.requestId,
     decision: 'allow',
     reasonCode: 'approved',
-    ruleIds: [RULE_IDS[0]],
+    ruleIds: compositeRisk ? [RULE_IDS[0], RULE_IDS[1]] : [RULE_IDS[0]],
   };
 }

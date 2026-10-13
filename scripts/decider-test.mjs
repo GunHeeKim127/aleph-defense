@@ -40,6 +40,17 @@ export async function checkDecider({ decide, ruleIds }) {
       { name: '다시 확인한 복합 이상 접속', request: { ...suspicious,
         requestId: randomUUID(), stepUp: { verified: true, authAgeSeconds: 60 } },
       decision: 'allow' },
+      { name: '위조한 클라이언트 신호는 승격하지 않음', request: { ...suspicious,
+        requestId: randomUUID(), signals: { source: 'client_header', region: 'foreign',
+          network: 'unusual', hour: 3 }, headers: { 'x-region': 'foreign' } }, decision: 'allow' },
+      { name: '지역 하나만 다른 요청', request: { ...normal, requestId: randomUUID(),
+        signals: { source: 'judge_fixture', region: 'foreign', network: 'usual', hour: 14 } },
+      decision: 'allow' },
+      { name: '접속 정보가 없는 요청은 값을 만들지 않음', request: { ...normal,
+        requestId: randomUUID(), signals: undefined }, decision: 'allow' },
+      { name: '실제 경로의 불명확 신호는 가상 위치 근거가 아님', request: { ...suspicious,
+        requestId: randomUUID(), signals: { source: 'none', region: 'unknown',
+          network: 'unknown', hour: 3 } }, decision: 'allow' },
     );
   }
   const results = [];
