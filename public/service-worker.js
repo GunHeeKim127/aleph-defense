@@ -1,4 +1,4 @@
-const CACHE = 'byte-back-shell-v12';
+const CACHE = 'byte-back-shell-v12-operations-visible';
 const SHELL = ['/', '/app.js', '/manifest.webmanifest', '/app-icon.svg', '/offline.html'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL))));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))));

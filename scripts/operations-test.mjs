@@ -32,7 +32,10 @@ const [html, app, worker] = await Promise.all([
   readFile(new URL('../public/service-worker.js', import.meta.url), 'utf8'),
 ]);
 assert.match(html, /id="operations"[^>]*hidden/u);
+assert.match(html, /id="operations-status"/u);
 assert.match(app, /fetch\('\/api\/operations'/u);
+assert.match(app, /\$\('operations'\)\.hidden = !session/u);
+assert.match(app, /\$\('refresh-operations'\)\.disabled = !deviceApproved/u);
 assert.match(app, /counts\.measured \+ counts\.notRun !== counts\.total/u);
 assert.match(worker, /pathname\.startsWith\('\/api\/'\)/u);
 console.log('통과 · 작전실 서버 요약과 41종 실행·미실행 수치 일치');

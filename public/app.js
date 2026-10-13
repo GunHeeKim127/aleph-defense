@@ -56,7 +56,11 @@ async function load() {
 function showSession(next) {
   generation++; session = next; deviceApproved = false; $('notes').replaceChildren(); resetEditor();
   $('login').hidden = !!session; $('account').hidden = !session; $('device').hidden = !session;
-  $('editor').hidden = true; $('notes').hidden = true; $('operations').hidden = true;
+  $('editor').hidden = true; $('notes').hidden = true; $('operations').hidden = !session;
+  $('refresh-operations').disabled = true;
+  $('operations-status').textContent = session
+    ? '서버의 기기 승인이 끝나면 작전 기록을 불러옵니다.' : '로그인하면 작전실 상태를 확인합니다.';
+  $('operations-summary').replaceChildren(); $('operations-checks').replaceChildren();
   $('account-label').textContent = session ? '로그인한 상태입니다.' : '';
   if (session) void checkDevice(); else message('로그인하면 기기 승인 상태를 확인합니다.');
 }
@@ -73,11 +77,19 @@ async function checkDevice() {
     $('device-status').textContent = deviceApproved ? `서버가 이 기기를 등록 기기로 확인했습니다.${code}`
       : state.status === 'pending' ? `승인 요청을 검토하고 있습니다.${code}` : '이 기기는 아직 승인되지 않았습니다.';
     $('request-device').hidden = deviceApproved || state.status === 'pending';
-    $('editor').hidden = !deviceApproved; $('notes').hidden = !deviceApproved; $('operations').hidden = !deviceApproved;
+    $('editor').hidden = !deviceApproved; $('notes').hidden = !deviceApproved;
+    $('refresh-operations').disabled = !deviceApproved;
+    $('operations-status').textContent = deviceApproved
+      ? '승인된 기기의 가린 서버 기록을 불러오는 중입니다.'
+      : '기기 승인 전에는 작전 기록과 보호 자료를 표시하지 않습니다.';
     if (deviceApproved) { message('승인된 기기입니다. 내 자료와 작전실 기록을 불러옵니다.'); await Promise.all([load(), loadOperations()]); }
-    else { $('notes').replaceChildren(); message('승인 전에는 보호 자료를 표시하지 않습니다.'); }
+    else { $('notes').replaceChildren(); $('operations-summary').replaceChildren(); $('operations-checks').replaceChildren(); message('승인 전에는 보호 자료를 표시하지 않습니다.'); }
   } catch (error) {
-    if (ticket === generation) { deviceApproved = false; $('editor').hidden = true; $('notes').hidden = true; $('notes').replaceChildren(); message(error.message); }
+    if (ticket === generation) {
+      deviceApproved = false; $('editor').hidden = true; $('notes').hidden = true; $('notes').replaceChildren();
+      $('refresh-operations').disabled = true; $('operations-status').textContent = '기기 승인 상태를 확인한 뒤 작전 기록을 표시합니다.';
+      $('operations-summary').replaceChildren(); $('operations-checks').replaceChildren(); message(error.message);
+    }
   }
 }
 
@@ -115,7 +127,9 @@ async function loadOperations() {
       for (const value of values) { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); }
       row.className = item.status === 'measured' ? 'measured' : 'not-run'; return row;
     }));
+    $('operations-status').textContent = `서버 기록 ${counts.total}개 중 실측 ${counts.measured}개, 미실행 ${counts.notRun}개입니다.`;
   } catch (error) {
+    $('operations-status').textContent = error.message;
     $('operations-summary').replaceChildren(operationCard('작전실', error.message));
     $('operations-checks').replaceChildren();
   }
@@ -138,6 +152,7 @@ $('logout').onclick = async () => {
 $('refresh').onclick = () => deviceApproved ? load() : checkDevice(); $('cancel').onclick = resetEditor;
 $('refresh-device').onclick = checkDevice;
 $('refresh-operations').onclick = loadOperations;
+$('go-operations').onclick = () => $('operations').scrollIntoView({ behavior: 'smooth', block: 'start' });
 $('request-device').onclick = async () => {
   $('request-device').disabled = true;
   try {
