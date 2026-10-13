@@ -33,24 +33,13 @@ test('build identity uses Vercel Git and deployment metadata', () => {
 });
 
 // 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
-test('first attack check reads public data.json without credentials', async () => {
+test('bundle attack records stay not_run when the isolated judge supplies no request record', async () => {
   const originalFetch = globalThis.fetch;
-  const requests = [];
   try {
-    globalThis.fetch = async (url, init) => {
-      requests.push({ url: String(url), options: init });
-      return new Response(JSON.stringify({ sampleMarker: 'SAMPLE_NOTE_1', notes: [{ title: '가상' }] }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    };
-    const [result] = await runAttackChecks(config);
-    assert.equal(requests[0].url, 'https://student-defense.vercel.app/data.json');
-    assert.equal(requests[0].options.redirect, 'error');
-    assert.match(result.observed, /HTTP 200 · 메모 개수 1/u);
-    globalThis.fetch = async () => new Response('<html>not the data</html>', { status: 200 });
-    const [failed] = await runAttackChecks(config);
-    assert.match(failed.observed, /메모 개수 확인 불가/u);
+    globalThis.fetch = async () => { throw new Error('bundle must not send untracked requests'); };
+    const results = await runAttackChecks(config);
+    assert.deepEqual(results.map(item => item.attackId), ['static_note_read', 'anonymous_list', 'anonymous_get']);
+    assert.equal(results.every(item => item.observed === 'not_run'), true);
   } finally {
     globalThis.fetch = originalFetch;
   }
