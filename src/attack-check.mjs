@@ -17,6 +17,15 @@ export async function runAttackChecks(config) {
     try { const data = await response.json(); jsonError = typeof data?.error === 'string' && !Array.isArray(data.notes); } catch { }
     results.push({ attackId: id, expected: '무로그인 401 또는 403 JSON 오류, 자료 없음', observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
   }
+  if (config.step >= 8) {
+    for (const [method, id] of [['GET', 'anonymous_announcement_read'], ['PUT', 'anonymous_announcement_update']]) {
+      const response = await request('/api/announcements/00000000-0000-4000-8000-000000000001', { method });
+      let jsonError = false;
+      try { const data = await response.json(); jsonError = typeof data?.error === 'string'; } catch { }
+      results.push({ attackId: id, expected: '무로그인 공지 요청 401 또는 403 JSON 오류, 자료 없음',
+        observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
+    }
+  }
   const invalid = await request('/api/notes', { headers: { Authorization: 'Bearer invalid' } });
   results.push({ attackId: 'invalid_login', expected: '잘못된 인증 401 JSON 오류', observed: `HTTP ${invalid.status}` });
   const page = await request('/');

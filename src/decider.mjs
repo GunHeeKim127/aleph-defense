@@ -1,5 +1,27 @@
 // 계약에 있는 엔진 검증 값만 사용합니다. 브라우저 헤더나 임의의 위치·신원 객체는 읽지 않습니다.
-export const RULE_IDS = Object.freeze(['device_registered', 'step_up_required']);
+export const RULE_IDS = Object.freeze(['device_registered', 'step_up_required', 'resource_zone_access']);
+
+// 엔진이 확인한 사용자·메서드·정확한 경로가 같은 자원 구역을 가리키는지 검사합니다.
+function hasResourceZoneAccess(request) {
+  if (request?.service !== 'notes' || request.deviceRegistered !== true
+      || !Number.isSafeInteger(request.queryLength) || request.queryLength !== 0
+      || typeof request.subjectId !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/u.test(request.subjectId)
+      || typeof request.method !== 'string' || typeof request.route !== 'string'
+      || typeof request.path !== 'string') return false;
+  const segments = request.path.split('/');
+  if (segments.length !== 4 || segments[0] !== ''
+      || !/^[a-zA-Z0-9_-]{1,128}$/u.test(segments[2])
+      || !/^[a-zA-Z0-9_-]{1,128}$/u.test(segments[3])
+      || segments[2] !== request.subjectId) return false;
+  const zone = segments[1];
+  if (zone === 'notes' && ['GET', 'PUT'].includes(request.method)) {
+    return request.route === `${request.method} /notes/:ownerId/:id`;
+  }
+  if (zone === 'announcements' && request.method === 'PUT') {
+    return request.route === 'PUT /announcements/:ownerId/:id';
+  }
+  return false;
+}
 
 // judge_fixture는 심판의 가상 접속 사건용이며 실제 위치 증거로 저장하거나 승격하지 않습니다.
 function isCompositeFixtureRisk(request) {
@@ -34,6 +56,16 @@ export async function decide(request) {
     };
   }
 
+  if (!hasResourceZoneAccess(request)) {
+    return {
+      schema: 'aleph.decision.v1',
+      requestId: request?.requestId,
+      decision: 'deny',
+      reasonCode: 'resource_not_allowed',
+      ruleIds: [RULE_IDS[2]],
+    };
+  }
+
   const compositeRisk = isCompositeFixtureRisk(request);
   if (compositeRisk && !hasFreshStepUp(request)) {
     return {
@@ -50,6 +82,6 @@ export async function decide(request) {
     requestId: request.requestId,
     decision: 'allow',
     reasonCode: 'approved',
-    ruleIds: compositeRisk ? [RULE_IDS[0], RULE_IDS[1]] : [RULE_IDS[0]],
+    ruleIds: compositeRisk ? [...RULE_IDS] : [RULE_IDS[0], RULE_IDS[2]],
   };
 }

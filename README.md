@@ -302,3 +302,39 @@ flowchart LR
 정상 가상 사건은 allow, 복합 이상 사건은 step_up, 다시 확인한 복합 사건은 allow가 정상입니다.
 미등록 기기는 복합 신호보다 먼저 deny되며, 위조한 클라이언트 출처와 지역 하나만 다른 요청은 step_up 근거가 되지 않습니다.
 로컬 연습에서는 결정 차이만 확인합니다. 실제 자료가 추가 확인 전에 차단되고 새 로그인 뒤 전달되는지는 제공 엔진과 심판이 검증하므로 현재 미실행입니다.
+
+## 8단계 저장점: 자료 구역별 접근 제한
+
+시작 커밋은 `065d54b 7단계 저장점`이며 README 단계 기록과 일치했고 Git 상태는 깨끗했습니다.
+기존 자료실 주소와 메모 CRUD 화면, `device_registered`, `step_up_required` 규칙은 유지합니다.
+메모와 강사 공지는 각각 `note:<uuid>`, `announcement:<uuid>` 자원 ID로 구별하며 화면 메뉴는 추가하지 않습니다.
+
+판정기는 계약에 있는 `subjectId`, `deviceRegistered`, `method`, `route`, `path`, `queryLength`만 사용합니다.
+자기 메모 경로는 `/notes/:ownerId/:id`, 강사 공지 경로는 `/announcements/:ownerId/:id`이며 실제 경로의 소유자 구간이 `subjectId`와 정확히 같아야 합니다.
+메모 GET·PUT과 공지 PUT만 구역 규칙으로 허용하고, 쿼리가 있거나 경로·메서드·route가 다르면 `deny · resource_not_allowed`입니다.
+`:id`와 같은 깊이에 `export` 같은 기능 경로를 만들지 않았으며 알 수 없는 경로는 기본 거부합니다.
+
+메모 API는 기존 저장 행의 `owner_id`와 검증된 사용자 ID를 읽기·수정 때 다시 비교하고 변경 시 소유자 필터도 적용합니다.
+공지 API는 인증 서버가 검증한 `app_metadata.role=instructor`와 저장된 `author_id`가 모두 맞아야 수정합니다.
+화면이나 요청 본문의 `role`, `owner_id`, `author_id`는 권한 근거로 사용하지 않습니다.
+공지 자료 저장 구조를 새로 만들거나 화면에 연결하는 작업은 이번 API 확인 범위에 포함하지 않습니다.
+
+```mermaid
+flowchart TD
+  A[엔진 검증 요청] --> B{등록 기기인가}
+  B -->|아니오| C[deny: device_not_registered]
+  B -->|예| D{method + route + path가 알려진 구역인가}
+  D -->|아니오| E[deny: resource_not_allowed]
+  D -->|예| F{path의 ownerId = subjectId인가}
+  F -->|아니오| E
+  F -->|예| G{복합 이상 신호인가}
+  G -->|예, 재확인 전| H[step_up: step_up_required]
+  G -->|아니오 또는 재확인 완료| I[API에서 소유자·강사 권한 재검사]
+  I -->|일치| J[자료 처리]
+  I -->|불일치| K[403]
+```
+
+확인 명령은 `npm run decider:test`와 `node --test test/notes-api.test.mjs`입니다.
+정상 결과는 A의 자기 메모 읽기·수정과 강사의 자기 공지 수정 통과입니다.
+거부 결과는 B의 A 메모, 일반 학생의 공지 수정, 기능 쿼리와 알 수 없는 경로가 각각 deny 또는 API 403으로 끝나는 것입니다.
+이 시험은 로컬 가상 요청과 모의 저장소 확인이며 운영 심판 판정이나 실제 강사 공지 자료의 실행 증거가 아닙니다.

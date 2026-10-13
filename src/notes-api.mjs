@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { createLoginVerifier } from './verify-login.mjs';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// 메모와 다른 자료 구역이 같은 UUID를 써도 충돌하지 않도록 자원 ID를 구분합니다.
+const noteResourceId = id => `note:${id}`;
 // 로그인과 소유자 검사 후 본인 메모만 처리하는 서버 API를 만듭니다.
 export function createNotesHandler({ config, single = false, env = process.env,
   fetchImpl = (...args) => fetch(...args), verifierFactory = createLoginVerifier } = {}) {
@@ -17,6 +19,8 @@ export function createNotesHandler({ config, single = false, env = process.env,
       identity = await verify(req.headers.authorization);
     } catch { return error(503, '로그인 확인 설정을 확인하세요.'); }
     if (!identity || typeof identity.userId !== 'string' || !UUID.test(identity.userId)) return error(401, '로그인 정보가 유효하지 않습니다. 다시 로그인하세요.');
+    const queryKeys = Object.entries(req.query ?? {}).filter(([, value]) => value !== undefined).map(([key]) => key);
+    if (queryKeys.some(key => key !== 'id') || (!single && queryKeys.length)) return error(403, '자료는 경로의 ID로만 선택할 수 있습니다.');
     if (req.query && Object.hasOwn(req.query, 'owner_id')) return error(403, '메모 소유자는 변경할 수 없습니다.');
     const methods = single ? ['GET', 'PUT', 'DELETE'] : ['GET', 'POST'];
     if (!methods.includes(req.method)) {
@@ -61,7 +65,7 @@ export function createNotesHandler({ config, single = false, env = process.env,
         if (existing[0].owner_id !== identity.userId) return error(403, '본인 메모만 접근할 수 있습니다.');
         if (req.method === 'GET') {
           const { id, title, body } = existing[0];
-          return res.status(200).json({ id, title, body });
+          return res.status(200).json({ id, resourceId: noteResourceId(id), title, body });
         }
         // Recheck the existing owner atomically during mutation, even if it changes after the read.
         url.searchParams.set('owner_id', 'eq.' + identity.userId);
@@ -79,10 +83,11 @@ export function createNotesHandler({ config, single = false, env = process.env,
       if (!Array.isArray(rows)) throw new Error();
       if (single && rows.length === 0) return error(404, '메모를 찾을 수 없습니다.');
       if (rows.some(row => row.owner_id !== identity.userId)) throw new Error();
-      if (req.method === 'POST') return res.status(201).json({ id: payload.id });
+      if (req.method === 'POST') return res.status(201).json({ id: payload.id,
+        resourceId: noteResourceId(payload.id) });
       if (req.method === 'DELETE') return res.status(204).end();
       // 응답에서 소유자 정보와 내부 필드를 제외하고 메모 공개 필드만 남깁니다.
-      const clean = rows.map(({ id, title, body }) => ({ id, title, body }));
+      const clean = rows.map(({ id, title, body }) => ({ id, resourceId: noteResourceId(id), title, body }));
       return res.status(200).json(single ? clean[0] : clean);
     } catch { return error(503, '자료를 처리할 수 없습니다.'); }
   };

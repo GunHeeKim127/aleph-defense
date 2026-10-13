@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createNotesHandler } from '../src/notes-api.mjs';
+import { createAnnouncementsHandler } from '../src/announcements-api.mjs';
 import { createLoginVerifier } from '../src/verify-login.mjs';
 import { deploymentIdentity } from '../scripts/deployment-identity.mjs';
 const a = '00000000-0000-4000-8000-000000000001';
@@ -54,7 +55,8 @@ test('own CRUD assigns verified owner, ignores user/role, filters list, and retu
   const s=setup();
   let r=await call(s.collection,'POST','unit-a',{title:'unit',body:'unit',userId:b,role:'admin'});
   assert.equal(r.code,201);const created=r.data.id;assert.match(created,/^[0-9a-f-]{36}$/);assert.equal(s.rows.get(created).owner_id,a);
-  r=await call(s.collection,'GET','unit-a');assert.equal(r.data.length,1);assert.deepEqual(Object.keys(r.data[0]).sort(),['body','id','title']);
+  r=await call(s.collection,'GET','unit-a');assert.equal(r.data.length,1);assert.deepEqual(Object.keys(r.data[0]).sort(),['body','id','resourceId','title']);
+  assert.equal(r.data[0].resourceId,`note:${created}`);
   r=await call(s.collection,'GET','unit-b');assert.deepEqual(r.data,[]);
   r=await call(s.single,'PUT','unit-a',{title:'changed',body:'changed'},created);assert.equal(r.data.title,'changed');assert.equal(s.rows.get(created).owner_id,a);
   r=await call(s.single,'GET','unit-a',undefined,created);assert.equal(r.code,200);
@@ -83,7 +85,23 @@ test('client owner changes in POST/PUT/query are denied; NULL owners are denied'
   await call(s.collection,'POST','unit-a',{id,title:'unit',body:'unit'});
   assert.equal((await call(s.single,'PUT','unit-a',{title:'unit',body:'unit',owner_id:b},id)).code,403);
   const r=response();await s.collection({method:'GET',headers:{authorization:'unit-a'},query:{owner_id:b}},r);assert.equal(r.code,403);
+  const exportQuery=response();await s.collection({method:'GET',headers:{authorization:'unit-a'},query:{export:'csv'}},exportQuery);assert.equal(exportQuery.code,403);
   s.rows.get(id).owner_id=null;assert.equal((await call(s.single,'GET','unit-a',undefined,id)).code,403);
+});
+// 강사 공지는 검증된 강사이면서 저장된 작성자일 때만 수정할 수 있습니다.
+test('announcement API separates resources and rejects menu/body role bypasses',async()=>{
+  const row={id,title:'notice',content:'body',author_id:a};
+  const fetchImpl=async(url,options)=>{
+    if(options.method==='GET')return {ok:true,json:async()=>[{id:row.id,title:row.title,body:row.content,author_id:row.author_id}]};
+    if(options.method==='PATCH'&&url.searchParams.get('author_id')===`eq.${a}`){Object.assign(row,JSON.parse(options.body));return {ok:true,json:async()=>[{id:row.id,title:row.title,body:row.content,author_id:row.author_id}]};}
+    return {ok:true,json:async()=>[]};
+  };
+  const verifierFactory=()=>async auth=>auth==='instructor-a'?{userId:a,isInstructor:true}:auth==='student-b'?{userId:b,isInstructor:false}:null;
+  const handler=createAnnouncementsHandler({config,env,fetchImpl,verifierFactory});
+  let r=await call(handler,'GET','student-b',undefined,id);assert.equal(r.code,200);assert.equal(r.data.resourceId,`announcement:${id}`);
+  r=await call(handler,'PUT','student-b',{title:'changed',body:'changed',role:'instructor'},id);assert.equal(r.code,403);
+  r=await call(handler,'PUT','instructor-a',{title:'changed',body:'changed'},id);assert.equal(r.code,200);assert.equal(row.title,'changed');
+  const query=response();await handler({method:'GET',headers:{authorization:'student-b'},query:{id,export:'csv'}},query);assert.equal(query.code,403);
 });
 // 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('atomic owner filter prevents mutation when ownership changes between check and write',async()=>{

@@ -53,6 +53,27 @@ export async function checkDecider({ decide, ruleIds }) {
           network: 'unknown', hour: 3 } }, decision: 'allow' },
     );
   }
+  if (ruleIds.includes('resource_zone_access')) {
+    checks.push(
+      { name: 'A의 자기 메모 읽기', request: { ...normal, requestId: randomUUID() },
+        decision: 'allow' },
+      { name: 'A의 자기 메모 수정', request: { ...normal, requestId: randomUUID(),
+        method: 'PUT', route: 'PUT /notes/:ownerId/:id' }, decision: 'allow' },
+      { name: 'B의 A 메모 접근', request: { ...normal, requestId: randomUUID(),
+        subjectId: 'other_fixture' }, decision: 'deny', reasonCode: 'resource_not_allowed' },
+      { name: '일반 학생의 강사 공지 수정', request: { ...normal, requestId: randomUUID(),
+        subjectId: 'learner_fixture', method: 'PUT', path: '/announcements/instructor_fixture/notice_1',
+        route: 'PUT /announcements/:ownerId/:id' }, decision: 'deny', reasonCode: 'resource_not_allowed' },
+      { name: '강사의 자기 공지 수정', request: { ...normal, requestId: randomUUID(),
+        subjectId: 'instructor_fixture', method: 'PUT', path: '/announcements/instructor_fixture/notice_1',
+        route: 'PUT /announcements/:ownerId/:id' }, decision: 'allow' },
+      { name: '알 수 없는 기능 경로', request: { ...normal, requestId: randomUUID(),
+        path: '/notes/learner_fixture/export', route: 'GET /notes/:ownerId/export' },
+      decision: 'deny', reasonCode: 'resource_not_allowed' },
+      { name: '쿼리로 고른 기능', request: { ...normal, requestId: randomUUID(),
+        queryLength: 12 }, decision: 'deny', reasonCode: 'resource_not_allowed' },
+    );
+  }
   const results = [];
   for (const item of checks) {
     const response = await decide(item.request);

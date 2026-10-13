@@ -92,7 +92,9 @@ export function createLoginVerifier({ config, supabaseSecretKey, judgeKeySet,
             || claims.role !== 'authenticated' || !UUID.test(claims.sub ?? '')
             || !Number.isSafeInteger(claims.exp)
             || claims.exp <= Math.floor(Date.now() / 1000)) return null;
-        return Object.freeze({ kind: 'student', userId: claims.sub });
+        // app_metadata는 인증 서버가 관리한 값만 사용하며 화면·본문의 role은 신뢰하지 않습니다.
+        const isInstructor = claims.app_metadata?.role === 'instructor';
+        return Object.freeze({ kind: 'student', userId: claims.sub, isInstructor });
       } catch { return null; }
     }
     return null;
