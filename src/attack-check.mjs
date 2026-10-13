@@ -33,6 +33,13 @@ export async function runAttackChecks(config) {
     results.push({ attackId: 'anonymous_note_restore', expected: '무로그인 복구 요청 401 또는 403 JSON 오류, 자료 변경 없음',
       observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
   }
+  if (config.step >= 11) {
+    const response = await request('/api/device-approval');
+    let jsonError = false;
+    try { const data = await response.json(); jsonError = typeof data?.error === 'string'; } catch { }
+    results.push({ attackId: 'anonymous_device_approval', expected: '무로그인 기기 승인 상태 요청 401 또는 403 JSON 오류',
+      observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
+  }
   const invalid = await request('/api/notes', { headers: { Authorization: 'Bearer invalid' } });
   results.push({ attackId: 'invalid_login', expected: '잘못된 인증 401 JSON 오류', observed: `HTTP ${invalid.status}` });
   const page = await request('/');

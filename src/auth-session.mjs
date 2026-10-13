@@ -91,14 +91,14 @@ export function createSessionAuth({ config, authConfig, env = process.env,
   // 쿠키 인증을 기존 API 검증에 연결하고 변경 요청의 출처를 검사합니다.
   const wrap = next => async (req, res) => {
     // External verified bearer requests (including the judge) retain the existing flow.
-    if (req.headers?.authorization) return next(req, res);
+    if (req.headers?.authorization) { req.authSource = 'bearer'; return next(req, res); }
     if (!['GET','HEAD'].includes(req.method) && !sameOrigin(req)) {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(403).json({ error: '같은 사이트에서 요청하세요.' });
     }
     try {
       const token = await tokenFromCookie(req, res);
-      if (token) req.headers = { ...req.headers, authorization: `Bearer ${token}` };
+      if (token) { req.headers = { ...req.headers, authorization: `Bearer ${token}` }; req.authSource = 'cookie'; }
       return next(req, res);
     } catch { res.setHeader('Cache-Control','no-store'); return res.status(503).json({ error: '로그인 서버 설정을 확인하세요.' }); }
   };
