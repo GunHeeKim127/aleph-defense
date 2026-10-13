@@ -13,6 +13,12 @@ function reads(count, { intervalSeconds = 2, owner = subject, start = START } = 
   }));
 }
 
+// 탐지 계약에 없는 값은 결과에 복사되거나 판단 근거로 사용되지 않습니다.
+function withUntrustedFields(events) {
+  return events.map(event => ({ ...event, token: 'not-read', realName: 'not-read',
+    identity: { ...event.identity, device: 'not-read' }, decision: 'not-read' }));
+}
+
 const cases = [
   { name: '정상 조회 30건', events: reads(30), expected: { action: 'observe' } },
   { name: '10분 안에 120건', events: reads(120), expected: { action: 'observe' } },
@@ -25,6 +31,10 @@ const cases = [
   expected: { action: 'observe' } },
   { name: '10분 밖으로 흩어진 조회 200건', events: reads(200,
     { intervalSeconds: 7 }), expected: { action: 'observe' } },
+  { name: 'POST 121건은 조회 폭주가 아님', events: reads(121).map(event => ({ ...event,
+    method: 'POST' })), expected: { action: 'observe' } },
+  { name: '계약 밖 비밀값은 읽지 않고 같은 결과', events: withUntrustedFields(reads(121)), expected: {
+    action: 'propose_revocation', reasonCode: 'burst_read', subject } },
 ];
 
 // This is a practice contract, not a live engine assertion or judge score.
