@@ -130,3 +130,20 @@ test('step 5 manifest includes data routes and a query-free HTTPS original API',
     {...config,step:5,sampleMarker:'SAMPLE_NOTE_1',allowedRoutes:routes,originalApiUrl:'https://unit.supabase.co/rest/v1/learning_notes'});
   assert.deepEqual(identity.allowedRoutes,routes);assert.equal(new URL(identity.originalApiUrl).search,'');assert.equal(identity.step,5);
 });
+// 6단계 이후에도 같은 Vercel 식별 계약과 5단계 자료 경로를 보존합니다.
+test('step 6 deployment identity accepts the current defense stage',()=>{
+  const routes=['GET /api/notes'];
+  const identity=deploymentIdentity({VERCEL_GIT_PROVIDER:'github',VERCEL_GIT_REPO_OWNER:'GunHeeKim127',
+    VERCEL_GIT_REPO_SLUG:'aleph-defense',VERCEL_GIT_COMMIT_SHA:'b'.repeat(40),VERCEL_URL:'aleph-defense.vercel.app'},
+    {...config,step:6,sampleMarker:'SAMPLE_NOTE_1',allowedRoutes:routes,originalApiUrl:'https://unit.supabase.co/rest/v1/learning_notes'});
+  assert.equal(identity.step,6);assert.deepEqual(identity.allowedRoutes,routes);assert.equal(identity.commit,'b'.repeat(40));
+});
+// 향후 단계는 50까지 허용하되 범위를 벗어나면 배포 식별 생성을 거부합니다.
+test('deployment identity accepts stage 50 and rejects stage 51',()=>{
+  const metadata={VERCEL_GIT_PROVIDER:'github',VERCEL_GIT_REPO_OWNER:'GunHeeKim127',
+    VERCEL_GIT_REPO_SLUG:'aleph-defense',VERCEL_GIT_COMMIT_SHA:'c'.repeat(40),VERCEL_URL:'aleph-defense.vercel.app'};
+  const future={...config,step:50,sampleMarker:'SAMPLE_NOTE_1',allowedRoutes:['GET /api/notes'],
+    originalApiUrl:'https://unit.supabase.co/rest/v1/learning_notes'};
+  assert.equal(deploymentIdentity(metadata,future).step,50);
+  assert.throws(()=>deploymentIdentity(metadata,{...future,step:51}));
+});

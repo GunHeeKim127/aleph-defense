@@ -1,8 +1,9 @@
 import { copyFile, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { deploymentIdentity } from './deployment-identity.mjs';
 
-const root = resolve(import.meta.dirname, '..');
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const source = resolve(root, 'data.json');
 const output = resolve(root, 'public', 'data.json');
 const config = JSON.parse(await readFile(resolve(root, 'aleph.config.json'), 'utf8'));
