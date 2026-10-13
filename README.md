@@ -437,6 +437,7 @@ Supabase **SQL Editor**에서 파일 내용을 검토한 뒤 실행하고, 자�
 **Table Editor → learning_device_approvals**에서 로그인 계정의 `owner_id`, `status=pending`, 화면 요청 코드로 시작하는 `device_id`를 함께 대조해
 일치하는 한 행만 `status=approved`, `approved_at=현재 시각`으로 바꿉니다. 요청 코드는 행 선택용 식별자이며 승인 키나 토큰이 아닙니다.
 승인 버튼 자체나 앱 설치 표시만으로 승인하지 않습니다.
+행이 많으면 `owner_id = 현재 로그인 계정`, `status = pending`, `device_id starts with 화면의 8자리 요청 코드` 순서로 필터를 겹쳐 한 행인지 확인한 뒤 승인합니다.
 실제 운영 릴레이의 기기 등록 여부는 기존 `deviceRegistered` 계약이 계속 담당하며 `src/decider.mjs`는 변경하지 않았습니다.
 
 ```mermaid
