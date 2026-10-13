@@ -1,27 +1,6 @@
 // 계약에 있는 엔진 검증 값만 사용합니다. 브라우저 헤더나 임의의 위치·신원 객체는 읽지 않습니다.
 export const RULE_IDS = Object.freeze(['device_registered', 'step_up_required', 'resource_zone_access']);
 const RESERVED_NOTE_IDS = new Set(['all', 'export']);
-const SUBJECT_NAMESPACE = new Set(['subject', 'student', 'learner', 'user']);
-const NOTE_NAMESPACE = new Set(['note', 'notes', 'memo', 'resource']);
-
-// 가명 주체와 메모 ID의 구역 접두사를 제외한 표지를 토큰 단위로 비교합니다.
-function identityTokens(value, namespace) {
-  if (typeof value !== 'string' || value.length > 128) return [];
-  return value.toLowerCase().split(/[^a-z0-9]+/u).filter(Boolean)
-    .filter(token => !namespace.has(token));
-}
-
-// 판정 요청의 가명 사용자 표지가 메모 자원 ID에 토큰 경계로 포함될 때만 자기 구역입니다.
-function isOwnedNote(subjectId, noteId) {
-  if (subjectId === noteId) return true;
-  const subject = identityTokens(subjectId, SUBJECT_NAMESPACE);
-  const resource = identityTokens(noteId, NOTE_NAMESPACE);
-  if (!subject.length || resource.length < subject.length) return false;
-  const startsWithSubject = subject.every((token, index) => resource[index] === token);
-  const suffixStart = resource.length - subject.length;
-  const endsWithSubject = subject.every((token, index) => resource[suffixStart + index] === token);
-  return startsWithSubject || endsWithSubject;
-}
 
 // 판정기는 메모 한 건의 읽기·수정 경로만 허용합니다. 소유자는 자료 API가 다시 검사합니다.
 function hasResourceZoneAccess(request) {
@@ -39,7 +18,6 @@ function hasResourceZoneAccess(request) {
       || RESERVED_NOTE_IDS.has(segments[2].toLowerCase())) return false;
   return segments[1] === 'notes'
     && ['GET', 'PUT'].includes(request.method)
-    && isOwnedNote(request.subjectId, segments[2])
     && normalizedRoute === `${request.method} /notes/:id`;
 }
 

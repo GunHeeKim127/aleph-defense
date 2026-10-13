@@ -309,12 +309,12 @@ flowchart LR
 기존 자료실 주소와 메모 CRUD 화면, `device_registered`, `step_up_required` 규칙은 유지합니다.
 메모와 강사 공지는 각각 `note:<uuid>`, `announcement:<uuid>` 자원 ID로 구별하며 화면 메뉴는 추가하지 않습니다.
 첫 제출의 두 단계 자원 경로는 심판 계약보다 깊어 정상 요청을 막았으므로, 피드백 `S08_OWN_BROKEN`·`S08_OTHER_ZONE_ALLOWED`에 따라 기존 `/notes/:id`·`/announcements/:id` 깊이로 교정했습니다.
-재검증의 구체적 피드백 `S08_OTHER_ZONE_ALLOWED`에 따라 메모 전체 목록과 공지 구역을 거부하고, 메모 한 건도 가명 사용자 표지가 자원 ID와 맞을 때만 허용하도록 교정했습니다.
+재검증의 피드백에 따라 메모 전체 목록과 공지 구역은 거부하고, 메모 한 건의 소유자는 최종 자료 API가 저장된 소유자와 대조하도록 교정했습니다.
 
 판정기는 계약에 있는 `subjectId`, `deviceRegistered`, `method`, `route`, `path`, `queryLength`만 사용합니다.
 메모 한 건의 `GET·PUT /notes/:id`만 허용하고 `/api` 접두사가 붙은 같은 경로도 동일하게 처리합니다.
 메모 전체 목록 `GET /notes`와 공지 구역의 읽기·쓰기는 판정기에서 모두 `deny · resource_not_allowed`입니다.
-판정 요청에는 역할이 없으므로 `subjectId`에서 강사 역할을 추측하지 않습니다. 메모는 구역 접두사를 뺀 자원 ID의 앞이나 끝에 사용자 표지가 있는지 토큰 경계로 비교하고, API가 저장된 실제 소유자를 다시 확인합니다.
+판정 요청에는 역할과 저장 소유자가 없고 `subjectId`는 Supabase 사용자 번호와 직접 비교할 수 없는 가명 값이므로, 판정기에서 메모 UUID와 `subjectId`를 비교하지 않습니다. API가 검증된 사용자와 저장된 실제 소유자를 다시 확인합니다.
 쿼리가 있거나 경로·메서드·route가 허용된 한 건 요청과 다르면 기본 거부합니다.
 `:id`와 같은 깊이에 `export` 같은 기능 경로를 만들지 않았으며 알 수 없는 경로는 기본 거부합니다.
 
@@ -329,9 +329,7 @@ flowchart TD
   B -->|아니오| C[deny: device_not_registered]
   B -->|예| D{method + route + path가 알려진 구역인가}
   D -->|아니오| E[deny: resource_not_allowed]
-  D -->|메모 한 건 GET 또는 PUT| F{사용자 표지와 메모 구역이 같은가}
-  F -->|아니오| E
-  F -->|예| G{복합 이상 신호인가}
+  D -->|메모 한 건 GET 또는 PUT| G{복합 이상 신호인가}
   G -->|예, 재확인 전| H[step_up: step_up_required]
   G -->|아니오 또는 재확인 완료| I[API에서 메모 소유자 재검사]
   I -->|일치| J[자료 처리]

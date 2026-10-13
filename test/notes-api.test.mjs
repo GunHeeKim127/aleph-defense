@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { createNotesHandler } from '../src/notes-api.mjs';
 import { createAnnouncementsHandler } from '../src/announcements-api.mjs';
 import { createLoginVerifier } from '../src/verify-login.mjs';
+import { decide } from '../src/decider.mjs';
 import { deploymentIdentity } from '../scripts/deployment-identity.mjs';
 const a = '00000000-0000-4000-8000-000000000001';
 const b = '00000000-0000-4000-8000-000000000002';
@@ -77,6 +78,15 @@ test('A and B cannot read, modify, delete or take over each other notes',async()
   assert.equal((await call(s.single,'PUT','unit-b',{title:'own-b',body:'own-b'},other)).code,200);
   assert.equal((await call(s.single,'DELETE','unit-b',undefined,other)).code,204);
   assert.equal(s.rows.get(id).owner_id,a);assert.equal(s.rows.get(id).title,'unit');
+});
+// 판정기는 UUID 단건 경로를 통과시키고 최종 API가 저장된 소유자로 A와 B를 구분합니다.
+test('normal UUID note reaches owner check while another user receives 403',async()=>{
+  const s=setup();await call(s.collection,'POST','unit-a',{id,title:'unit',body:'unit'});
+  const request={service:'notes',deviceRegistered:true,queryLength:0,subjectId:'opaque-subject',
+    method:'GET',path:`/notes/${id}`,route:'GET /notes/:id',requestId:'stage8-owner-check'};
+  assert.equal((await decide(request)).decision,'allow');
+  assert.equal((await call(s.single,'GET','unit-a',undefined,id)).code,200);
+  assert.equal((await call(s.single,'GET','unit-b',undefined,id)).code,403);
 });
 // 아래 이름에 명시된 동작과 거부 조건을 시험합니다.
 test('client owner changes in POST/PUT/query are denied; NULL owners are denied',async()=>{
