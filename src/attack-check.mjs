@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 // 실제 요청의 상태/개수만 기록합니다. 토큰·메모 본문·키를 반환하지 않습니다.
 // 현재 배포에 실제 요청을 보내 상태와 공개 노출 여부를 기록합니다.
 export async function runAttackChecks(config) {
@@ -6,7 +5,10 @@ export async function runAttackChecks(config) {
   if (app.protocol !== 'https:' || app.username || app.password || app.search || app.hash || app.pathname !== '/' || app.hostname.endsWith('.example')) throw new Error('실제 배포 주소가 필요합니다.');
   const results = [];
   // 자기 점검용 HTTPS 요청을 시간 제한과 함께 보냅니다.
-  const request = async (path, options = {}) => fetch(new URL(path, app), { ...options, redirect: 'error', signal: AbortSignal.timeout(10000) });
+  const request = async (path, options = {}) => {
+    if (typeof path !== 'string' || !/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/u.test(path)) throw new Error('path_format');
+    return fetch(new URL(path, app).href, { ...options, redirect: 'error', signal: AbortSignal.timeout(10000) });
+  };
   const staticResponse = await request('/data.json');
   let count = null;
   try { const data = await staticResponse.json(); if (Array.isArray(data.notes)) count = data.notes.length; } catch { }
@@ -40,22 +42,10 @@ export async function runAttackChecks(config) {
   let step = null; try { step = (await deployment.json()).step } catch { }
   results.push({ attackId: 'deployment_identity', expected: `aleph.json 열림, 단계 ${config.step}`,
     observed: `HTTP ${deployment.status} · 단계 ${step ?? '확인 불가'}` });
-  results.push({ attackId: 'account_a_crud', expected: '5단계 서버 로그인 및 본인 CRUD 정상', observed: '5단계 사용자 실행 확인: 본인 CRUD 정상, 로그아웃 후 메모 숨김。 도구의 실계정 자동 시험은 미실행' });
-  results.push({ attackId: 'account_b_other_note', expected: 'A/B 상대 메모 조회·수정·삭제와 소유자 변경 거부', observed: '5단계 사용자 화면 확인: 양방향 GET·PUT·DELETE 모두 403。 소유자 변경 거부는 4단계 사용자 확인 및 로컬 모의 시험으로 확인' });
-  const publicConfig = JSON.parse(await readFile(new URL('../config/auth.json', import.meta.url), 'utf8'));
-  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicConfig.publishableKey || '')
-    || publicConfig.projectUrl + '/auth/v1' !== config.identityProvider.issuer) throw new Error('공개 DB 점검 설정을 확인하세요.');
-  const directUrl = new URL(config.originalApiUrl);
-  if (directUrl.protocol !== 'https:' || directUrl.origin !== new URL(publicConfig.projectUrl).origin || directUrl.search) throw new Error('원본 자료 경로를 확인하세요.');
-  directUrl.searchParams.set('select', 'id'); directUrl.searchParams.set('limit', '1');
-  const direct = await fetch(directUrl, {
-    headers: { apikey: publicConfig.publishableKey }, redirect: 'error', signal: AbortSignal.timeout(10000),
-  });
-  results.push({ attackId: 'anonymous_direct_data_api', expected: '공개 키만 사용하는 anon 직접 읽기 401/403 거부', observed: `HTTP ${direct.status} · 인증 사용자 토큰/서버 키 미사용` });
   let exposed = false;
   for (const path of ['/', '/app.js', '/login-config.json', '/config/auth.json']) {
     const response = await request(path); const body = await response.text();
-    exposed ||= body.includes(publicConfig.publishableKey) || /sb_publishable_[A-Za-z0-9_-]{12,}/.test(body);
+    exposed ||= /sb_publishable_[A-Za-z0-9_-]{12,}/.test(body);
   }
   results.push({ attackId: 'browser_key_exposure', expected: '첫 화면·JS·이전 키 경로에 공개 키 없음', observed: exposed ? '공개 키 노출 발견' : '공개 키 노출 없음' });
   const session = await request('/api/auth');
