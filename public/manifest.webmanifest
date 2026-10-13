@@ -1,7 +1,7 @@
 {
-  "name": "BYTE BACK 내 자료실",
-  "short_name": "내 자료실",
-  "description": "서버 기기 승인 뒤 학습용 가상 메모를 여는 설치형 웹앱",
+  "name": "BYTE BACK 탈환 작전실",
+  "short_name": "탈환 작전실",
+  "description": "서버 기기 승인 뒤 자료실과 가린 방어 기록을 확인하는 설치형 웹앱",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -56,7 +56,7 @@ async function load() {
 function showSession(next) {
   generation++; session = next; deviceApproved = false; $('notes').replaceChildren(); resetEditor();
   $('login').hidden = !!session; $('account').hidden = !session; $('device').hidden = !session;
-  $('editor').hidden = true; $('notes').hidden = true;
+  $('editor').hidden = true; $('notes').hidden = true; $('operations').hidden = true;
   $('account-label').textContent = session ? '로그인한 상태입니다.' : '';
   if (session) void checkDevice(); else message('로그인하면 기기 승인 상태를 확인합니다.');
 }
@@ -73,11 +73,51 @@ async function checkDevice() {
     $('device-status').textContent = deviceApproved ? `서버가 이 기기를 등록 기기로 확인했습니다.${code}`
       : state.status === 'pending' ? `승인 요청을 검토하고 있습니다.${code}` : '이 기기는 아직 승인되지 않았습니다.';
     $('request-device').hidden = deviceApproved || state.status === 'pending';
-    $('editor').hidden = !deviceApproved; $('notes').hidden = !deviceApproved;
-    if (deviceApproved) { message('승인된 기기입니다. 내 자료를 불러옵니다.'); await load(); }
+    $('editor').hidden = !deviceApproved; $('notes').hidden = !deviceApproved; $('operations').hidden = !deviceApproved;
+    if (deviceApproved) { message('승인된 기기입니다. 내 자료와 작전실 기록을 불러옵니다.'); await Promise.all([load(), loadOperations()]); }
     else { $('notes').replaceChildren(); message('승인 전에는 보호 자료를 표시하지 않습니다.'); }
   } catch (error) {
     if (ticket === generation) { deviceApproved = false; $('editor').hidden = true; $('notes').hidden = true; $('notes').replaceChildren(); message(error.message); }
+  }
+}
+
+// 서버가 가린 작전 기록만 카드와 표로 표시하며 미실행 값을 임의로 채우지 않습니다.
+const operationCard = (name, value) => {
+  const card = document.createElement('div'); card.className = 'operation-card';
+  const heading = document.createElement('strong'); heading.textContent = name;
+  const content = document.createElement('span'); content.textContent = value;
+  card.append(heading, content); return card;
+};
+
+async function loadOperations() {
+  if (!session || !deviceApproved) return;
+  try {
+    const requestId = crypto.randomUUID();
+    const response = await fetch('/api/operations', { credentials: 'same-origin', cache: 'no-store',
+      headers: { 'X-Request-Id': requestId } });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error || '작전실 기록을 확인할 수 없습니다.');
+    const counts = data.checkCounts;
+    if (!counts || counts.total !== data.checks?.length
+        || counts.measured + counts.notRun !== counts.total) throw new Error('작전실 수치가 서버 기록과 다릅니다.');
+    $('operations-summary').replaceChildren(
+      operationCard('판정기 규칙', `${data.policy.count}개 · ${data.policy.ruleIds.join(', ')}`),
+      operationCard('탐지 사건', data.detection.status === 'not_run' ? '미실행' : `${data.detection.eventCount}건`),
+      operationCard('회수 상태', data.revocation.status === 'not_run' ? '미실행' : data.revocation.status),
+      operationCard('복구 버전', `${data.recovery.version} · ${data.recovery.status}`),
+      operationCard('41종 점검', `실측 ${counts.measured} · 기대 일치 ${counts.matched} · 미실행 ${counts.notRun}`),
+      operationCard('출처', `학생 코드 + ${data.sources.engine}`),
+    );
+    $('operations-checks').replaceChildren(...data.checks.map(item => {
+      const row = document.createElement('tr');
+      const values = [`${item.stage}단계 · ${item.kind === 'normal' ? '정상' : '금지'}`, item.request,
+        item.expected, item.actual ?? '미실행', item.requestId ?? '미실행', item.checkedAt ?? '미실행'];
+      for (const value of values) { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); }
+      row.className = item.status === 'measured' ? 'measured' : 'not-run'; return row;
+    }));
+  } catch (error) {
+    $('operations-summary').replaceChildren(operationCard('작전실', error.message));
+    $('operations-checks').replaceChildren();
   }
 }
 // 양식 제출 시 서버에 요청하고 성공 상태와 오류를 화면에 반영합니다.
@@ -97,6 +137,7 @@ $('logout').onclick = async () => {
 };
 $('refresh').onclick = () => deviceApproved ? load() : checkDevice(); $('cancel').onclick = resetEditor;
 $('refresh-device').onclick = checkDevice;
+$('refresh-operations').onclick = loadOperations;
 $('request-device').onclick = async () => {
   $('request-device').disabled = true;
   try {
