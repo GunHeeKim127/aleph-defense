@@ -17,7 +17,10 @@ function isOwnedNote(subjectId, noteId) {
   const subject = identityTokens(subjectId, SUBJECT_NAMESPACE);
   const resource = identityTokens(noteId, NOTE_NAMESPACE);
   if (!subject.length || resource.length < subject.length) return false;
-  return subject.every((token, index) => resource[index] === token);
+  const startsWithSubject = subject.every((token, index) => resource[index] === token);
+  const suffixStart = resource.length - subject.length;
+  const endsWithSubject = subject.every((token, index) => resource[suffixStart + index] === token);
+  return startsWithSubject || endsWithSubject;
 }
 
 // 판정기는 메모 한 건의 읽기·수정 경로만 허용합니다. 소유자는 자료 API가 다시 검사합니다.
