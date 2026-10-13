@@ -418,3 +418,43 @@ flowchart TD
 
 정상 결과: A의 본인 메모 읽기·수정과 등록 기기 정상 요청은 유지되고, B 사본 한 건은 같은 ID·소유자·본문 해시로 복원됩니다.
 거부 결과: 무로그인·다른 소유자·사본 불일치·B의 A 메모·메모 목록·공지 구역·미등록 기기 요청은 자료를 받거나 바꾸지 못합니다.
+
+## 11단계 저장점: 서버 승인 뒤 여는 설치형 접속 앱
+
+시작 커밋은 `7b62cb7 10단계 저장점`이며 README의 10단계 기록과 일치했고 Git 상태는 깨끗했습니다.
+기존 자료실 주소·로그인·본인 메모 CRUD·판정기·탐지·복원·XDR 기능은 보존합니다.
+`manifest.webmanifest`와 서비스 워커를 추가해 현재 화면을 설치형 웹앱으로 표시하지만, 설치 여부는 승인 근거로 사용하지 않습니다.
+오프라인에서는 보호 자료나 이전 응답을 캐시하지 않고 오프라인 안내만 표시합니다. 별도 접속 프로그램이나 설치 명령은 없습니다.
+
+로그인 뒤 화면은 먼저 `GET /api/device-approval`로 서버 승인표를 확인합니다.
+승인되지 않은 상태에서는 메모 목록과 편집 화면을 숨기고 `/api/notes`도 서버에서 403으로 거부합니다.
+`이 기기 승인 요청`은 `POST /api/device-approval`로 `pending` 행과 비밀이 아닌 불투명 기기 식별자만 만들며 권한을 주지 않습니다.
+식별자는 `HttpOnly·Secure·SameSite=Strict` 쿠키에 있어 화면 JavaScript가 읽지 못하고, 기기 키·승인 토큰을 localStorage·sessionStorage·IndexedDB에 저장하지 않습니다.
+관리자가 서버 승인표의 정확한 계정·기기 행을 `approved`로 바꾸고 승인 시각을 기록한 뒤에만 기존 자료실이 열립니다.
+
+`sql/step11-device-approval.sql`은 `learning_device_approvals` 한 테이블만 만들고 RLS를 켜며 PUBLIC·anon·authenticated 권한을 회수합니다.
+Supabase **SQL Editor**에서 파일 내용을 검토한 뒤 실행하고, 자료실에서 승인 요청을 만든 다음 **Table Editor → learning_device_approvals**에서
+해당 요청 행만 `status=approved`, `approved_at=현재 시각`으로 바꿉니다. 승인 버튼 자체나 앱 설치 표시만으로 승인하지 않습니다.
+실제 운영 릴레이의 기기 등록 여부는 기존 `deviceRegistered` 계약이 계속 담당하며 `src/decider.mjs`는 변경하지 않았습니다.
+
+```mermaid
+flowchart TD
+  A[설치 가능 웹앱] --> B[서버 로그인]
+  B --> C{서버 승인표 상태}
+  C -->|없음| D[pending 승인 요청]
+  C -->|pending 또는 revoked| E[메모 UI 숨김 + API 403]
+  D --> E
+  C -->|approved| F[기존 메모 화면 표시]
+  F --> G[API가 로그인·기기 승인·메모 소유자 재검사]
+```
+
+확인 명령: `npm run device:test`
+
+1. 로그인 전과 pending 상태에서는 메모 목록·편집기가 숨겨지고 브라우저 메모 API도 403이어야 합니다.
+2. 서버 승인표의 같은 계정·기기 행이 approved인 경우에만 기존 메모 목록과 CRUD 화면이 열려야 합니다.
+3. 무로그인 승인 상태 요청은 401/403이어야 하며, 운영 엔진의 기존 Bearer 요청과 판정기 시험은 유지되어야 합니다.
+4. Application → Manifest에서 앱 이름·아이콘·standalone 설정을, Application → Service Workers에서 등록 상태를 확인합니다.
+5. 네트워크를 끊고 새로 열면 메모 대신 오프라인 안내가 나와야 합니다.
+
+로컬 모의 시험은 승인 요청이 pending만 만들고, pending 자료 요청은 거부하며, approved 요청만 기존 처리기로 전달하는 것을 확인합니다.
+실제 Supabase 테이블 생성·관리자 승인·설치된 앱 실행은 사용자가 SQL 적용 및 배포 후 확인하므로 실행 전에는 미실행입니다.

@@ -1,6 +1,6 @@
 // 화면 요소를 ID로 찾습니다.
 const $ = id => document.getElementById(id);
-let session = null, editId = null, generation = 0;
+let session = null, deviceApproved = false, editId = null, generation = 0, installPrompt = null;
 // 처리 결과나 오류를 화면의 상태 문구에 표시합니다.
 const message = text => { $('status').textContent = text; };
 // 편집 상태를 해제하고 메모 추가 화면으로 되돌립니다.
@@ -11,6 +11,7 @@ function resetEditor() {
 // 로그인 쿠키를 함께 보내 서버 메모 API를 호출하고 JSON 오류를 처리합니다.
 async function api(path = '', options = {}) {
   if (!session) throw new Error('로그인이 필요합니다.');
+  if (!deviceApproved) throw new Error('서버의 기기 승인이 필요합니다.');
   const response = await fetch('/api/notes' + path, {
     ...options, cache: 'no-store', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
   });
@@ -53,10 +54,30 @@ async function load() {
 }
 // 로그인 상태에 맞춰 입력 화면과 메모 목록을 갱신합니다.
 function showSession(next) {
-  generation++; session = next; $('notes').replaceChildren(); resetEditor();
-  $('login').hidden = !!session; $('account').hidden = !session; $('editor').hidden = !session;
+  generation++; session = next; deviceApproved = false; $('notes').replaceChildren(); resetEditor();
+  $('login').hidden = !!session; $('account').hidden = !session; $('device').hidden = !session;
+  $('editor').hidden = true; $('notes').hidden = true;
   $('account-label').textContent = session ? '로그인한 상태입니다.' : '';
-  if (session) void load(); else message('로그인하면 내 메모를 볼 수 있습니다.');
+  if (session) void checkDevice(); else message('로그인하면 기기 승인 상태를 확인합니다.');
+}
+
+async function checkDevice() {
+  const ticket = generation;
+  try {
+    const response = await fetch('/api/device-approval', { credentials: 'same-origin', cache: 'no-store' });
+    const state = await response.json();
+    if (!response.ok) throw new Error(state.error || '기기 승인 상태를 확인할 수 없습니다.');
+    if (ticket !== generation || !session) return;
+    deviceApproved = state.approved === true;
+    $('device-status').textContent = deviceApproved ? '서버가 이 기기를 등록 기기로 확인했습니다.'
+      : state.status === 'pending' ? '승인 요청을 검토하고 있습니다.' : '이 기기는 아직 승인되지 않았습니다.';
+    $('request-device').hidden = deviceApproved || state.status === 'pending';
+    $('editor').hidden = !deviceApproved; $('notes').hidden = !deviceApproved;
+    if (deviceApproved) { message('승인된 기기입니다. 내 자료를 불러옵니다.'); await load(); }
+    else { $('notes').replaceChildren(); message('승인 전에는 보호 자료를 표시하지 않습니다.'); }
+  } catch (error) {
+    if (ticket === generation) { deviceApproved = false; $('editor').hidden = true; $('notes').hidden = true; $('notes').replaceChildren(); message(error.message); }
+  }
 }
 // 양식 제출 시 서버에 요청하고 성공 상태와 오류를 화면에 반영합니다.
 $('login').onsubmit = async event => {
@@ -73,7 +94,19 @@ $('logout').onclick = async () => {
   try { await auth({ action: 'logout' }); showSession(null); }
   catch (error) { message('로그아웃 실패: ' + error.message); }
 };
-$('refresh').onclick = load; $('cancel').onclick = resetEditor;
+$('refresh').onclick = () => deviceApproved ? load() : checkDevice(); $('cancel').onclick = resetEditor;
+$('refresh-device').onclick = checkDevice;
+$('request-device').onclick = async () => {
+  $('request-device').disabled = true;
+  try {
+    const response = await fetch('/api/device-approval', { method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'request' }) });
+    const state = await response.json();
+    if (!response.ok) throw new Error(state.error || '승인 요청을 처리할 수 없습니다.');
+    await checkDevice();
+  } catch (error) { message(error.message); }
+  finally { $('request-device').disabled = false; }
+};
 // 양식 제출 시 서버에 요청하고 성공 상태와 오류를 화면에 반영합니다.
 $('editor').onsubmit = async event => {
   event.preventDefault(); $('save').disabled = true;
@@ -95,3 +128,7 @@ async function auth(body) {
 try {
   showSession((await auth()).authenticated); $('login-button').disabled = false;
 } catch { message('로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도하세요.'); }
+
+window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('install').hidden = false; });
+$('install').onclick = async () => { if (!installPrompt) return; await installPrompt.prompt(); installPrompt = null; $('install').hidden = true; };
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});

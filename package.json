@@ -12,6 +12,7 @@
     "restore:plan": "node scripts/policy-restore.mjs plan",
     "restore:apply": "node scripts/policy-restore.mjs apply",
     "restore:test": "node --test test/step10-restore.test.mjs",
+    "device:test": "node --test test/step11-device-approval.test.mjs",
     "fixture:7": "node scripts/fixture-7.mjs",
     "xdr:run": "node scripts/xdr-run.mjs"
   },
