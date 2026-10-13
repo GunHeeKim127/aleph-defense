@@ -309,13 +309,13 @@ flowchart LR
 기존 자료실 주소와 메모 CRUD 화면, `device_registered`, `step_up_required` 규칙은 유지합니다.
 메모와 강사 공지는 각각 `note:<uuid>`, `announcement:<uuid>` 자원 ID로 구별하며 화면 메뉴는 추가하지 않습니다.
 첫 제출의 두 단계 자원 경로는 심판 계약보다 깊어 정상 요청을 막았으므로, 피드백 `S08_OWN_BROKEN`·`S08_OTHER_ZONE_ALLOWED`에 따라 기존 `/notes/:id`·`/announcements/:id` 깊이로 교정했습니다.
-재검증에서도 같은 코드가 반복되어 정상 화면의 `GET /notes` 목록 읽기를 명시적으로 허용하고, 개별 메모는 사용자 표지가 포함된 자원 ID만 허용하며, 공지 수정은 검증된 강사 표지의 사용자만 통과하도록 보완했습니다.
+재검증의 구체적 피드백 `S08_OTHER_ZONE_ALLOWED`에 따라 판정기에서 메모 전체 목록과 공지 구역을 모두 거부하도록 교정했습니다.
 
 판정기는 계약에 있는 `subjectId`, `deviceRegistered`, `method`, `route`, `path`, `queryLength`만 사용합니다.
-정상 목록 읽기 `GET /notes`는 허용하고 API가 검증된 사용자 소유자로 다시 필터링합니다.
-개별 자기 메모는 `/notes/:id`, 강사 공지는 `/announcements/:id`이며 엔진이 확인한 사용자 표지와 자원 ID의 사용자 표지가 일치해야 합니다.
-공지 수정은 엔진이 확인한 강사 표지의 사용자만 판정기를 통과하고 API에서 검증된 강사 권한과 저장 작성자를 다시 확인합니다.
-메모 GET·PUT과 공지 PUT만 구역 규칙으로 허용하고, 쿼리가 있거나 경로·메서드·route가 다르면 `deny · resource_not_allowed`입니다.
+메모 한 건의 `GET·PUT /notes/:id`만 허용하고 `/api` 접두사가 붙은 같은 경로도 동일하게 처리합니다.
+메모 전체 목록 `GET /notes`와 공지 구역의 읽기·쓰기는 판정기에서 모두 `deny · resource_not_allowed`입니다.
+판정 요청에는 역할이 없으므로 `subjectId`에서 강사 역할을 추측하거나 자원 ID와 사용자를 비교하지 않습니다. 메모 소유자는 API가 다시 확인합니다.
+쿼리가 있거나 경로·메서드·route가 허용된 한 건 요청과 다르면 기본 거부합니다.
 `:id`와 같은 깊이에 `export` 같은 기능 경로를 만들지 않았으며 알 수 없는 경로는 기본 거부합니다.
 
 메모 API는 기존 저장 행의 `owner_id`와 검증된 사용자 ID를 읽기·수정 때 다시 비교하고 변경 시 소유자 필터도 적용합니다.
@@ -329,16 +329,14 @@ flowchart TD
   B -->|아니오| C[deny: device_not_registered]
   B -->|예| D{method + route + path가 알려진 구역인가}
   D -->|아니오| E[deny: resource_not_allowed]
-  D -->|예| F{path의 자원 ID = subjectId인가}
-  F -->|아니오| E
-  F -->|예| G{복합 이상 신호인가}
+  D -->|메모 한 건 GET 또는 PUT| G{복합 이상 신호인가}
   G -->|예, 재확인 전| H[step_up: step_up_required]
-  G -->|아니오 또는 재확인 완료| I[API에서 소유자·강사 권한 재검사]
+  G -->|아니오 또는 재확인 완료| I[API에서 메모 소유자 재검사]
   I -->|일치| J[자료 처리]
   I -->|불일치| K[403]
 ```
 
 확인 명령은 `npm run decider:test`와 `node --test test/notes-api.test.mjs`입니다.
-정상 결과는 A의 자기 메모 읽기·수정과 강사의 자기 공지 수정 통과입니다.
-거부 결과는 B의 A 메모, 일반 학생의 공지 수정, 기능 쿼리와 알 수 없는 경로가 각각 deny 또는 API 403으로 끝나는 것입니다.
+정상 결과는 메모 한 건의 읽기·수정이 판정기를 통과하고 API가 본인 소유자를 다시 확인하는 것입니다.
+거부 결과는 메모 전체 목록, 공지 구역 전체, 기능 쿼리와 알 수 없는 경로가 판정기에서 deny로 끝나는 것입니다.
 이 시험은 로컬 가상 요청과 모의 저장소 확인이며 운영 심판 판정이나 실제 강사 공지 자료의 실행 증거가 아닙니다.
