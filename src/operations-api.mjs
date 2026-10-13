@@ -7,7 +7,7 @@ import { createLoginVerifier } from './verify-login.mjs';
 const CHECKS = Object.freeze([
   ['s01_public_shell', 1, 'normal', 'GET /', 'HTTP 200'],
   ['s01_public_sample', 1, 'normal', 'GET /data.json', 'HTTP 200, notes 0'],
-  ['s02_server_notes', 2, 'forbidden', 'GET /data.json', 'public notes 0'],
+  ['s02_server_notes', 2, 'forbidden', 'GET /api/notes/:id without login', 'HTTP 401 or 403'],
   ['s02_direct_database', 2, 'forbidden', 'anon direct database SELECT', 'HTTP 401 or 403'],
   ['s03_login', 3, 'normal', 'POST /api/auth', 'authenticated session'],
   ['s03_anonymous_notes', 3, 'forbidden', 'GET /api/notes', 'HTTP 401 or 403'],
@@ -48,11 +48,6 @@ const CHECKS = Object.freeze([
   ['s11_approved_crud', 11, 'normal', 'approved device note CRUD', 'owner CRUD preserved'],
 ]);
 
-// 외부 요청 ID는 UUID 형식만 받아 표에 기록하고, 그 밖의 값은 새 가명 ID로 바꿉니다.
-const safeRequestId = value => typeof value === 'string'
-  && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(value)
-  ? value.toLowerCase() : randomUUID();
-
 // 안전 정책 사본의 내용 해시를 다시 검증하고 본문 없는 버전 요약만 만듭니다.
 function recoverySummary() {
   const text = readFileSync(new URL('../backups/step10/safe-policy.json', import.meta.url), 'utf8');
@@ -78,27 +73,38 @@ export function createOperationsHandler({ config, env = process.env,
       const identity = await verify(req.headers?.authorization);
       if (!identity?.userId) return res.status(401).json({ error: '로그인이 필요합니다.' });
       const checkedAt = now().toISOString();
-      const allowedId = safeRequestId(req.headers?.['x-request-id']);
-      const deniedId = randomUUID();
-      const target = new URL('/api/notes', config.publicAppUrl);
-      const denied = await fetchImpl(target, { method: 'GET', redirect: 'error',
-        headers: { 'X-Request-Id': deniedId }, signal: AbortSignal.timeout(10000) });
+      const observations = [
+        { checkId: 's01_public_sample', path: '/data.json', requestId: randomUUID() },
+        { checkId: 's03_anonymous_notes', path: '/api/notes', requestId: randomUUID() },
+        { checkId: 's02_server_notes', path: '/api/notes/00000000-0000-4000-8000-000000000001', requestId: randomUUID() },
+      ];
+      for (const observation of observations) {
+        const response = await fetchImpl(new URL(observation.path, config.publicAppUrl).href, {
+          method: 'GET', redirect: 'error', headers: { 'X-Request-Id': observation.requestId },
+          signal: AbortSignal.timeout(10000),
+        });
+        observation.status = response.status;
+        if (observation.checkId === 's01_public_sample') {
+          let noteCount = null;
+          try { const data = await response.json(); if (Array.isArray(data?.notes)) noteCount = data.notes.length; } catch { }
+          observation.actual = `HTTP ${response.status} · public notes ${noteCount ?? 'unknown'}`;
+          observation.matched = response.status === 200 && noteCount === 0;
+        } else {
+          observation.actual = `HTTP ${response.status} · anonymous response body redacted`;
+          observation.matched = response.status === 401 || response.status === 403;
+        }
+      }
       const checks = CHECKS.map(([checkId, stage, kind, request, expected]) => ({
         checkId, stage, kind, request, expected, status: 'not_run', actual: null,
         requestId: null, checkedAt: null,
       }));
-      Object.assign(checks.find(item => item.checkId === 's11_approved_open'), {
-        status: 'measured', actual: 'HTTP 200 · operation summary allowed on approved device',
-        requestId: allowedId, checkedAt,
-      });
-      Object.assign(checks.find(item => item.checkId === 's03_anonymous_notes'), {
-        status: 'measured', actual: `HTTP ${denied.status} · anonymous response body redacted`,
-        requestId: deniedId, checkedAt,
-      });
+      for (const observation of observations) Object.assign(
+        checks.find(item => item.checkId === observation.checkId),
+        { status: 'measured', actual: observation.actual, requestId: observation.requestId,
+          checkedAt, matched: observation.matched },
+      );
       const measured = checks.filter(item => item.status === 'measured');
-      const matched = measured.filter(item => item.kind === 'normal'
-        ? item.actual?.startsWith('HTTP 200')
-        : /^HTTP (401|403)\b/u.test(item.actual ?? ''));
+      const matched = measured.filter(item => item.matched === true);
       return res.status(200).json({
         schema: 'aleph.operations.v1', checkedCommit: process.env.VERCEL_GIT_COMMIT_SHA?.toLowerCase() ?? 'local',
         generatedAt: checkedAt,
@@ -111,7 +117,7 @@ export function createOperationsHandler({ config, env = process.env,
         checkCounts: { total: checks.length, measured: measured.length,
           matched: matched.length,
           notRun: checks.length - measured.length },
-        checks,
+        checks: checks.map(({ matched: _matched, ...item }) => item),
       });
     } catch {
       return res.status(503).json({ error: '작전실 서버 기록을 확인할 수 없습니다.' });

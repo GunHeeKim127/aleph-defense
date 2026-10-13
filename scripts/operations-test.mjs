@@ -8,24 +8,36 @@ const response = () => ({ statusCode: 0, body: null, headers: {},
   status(code) { this.statusCode = code; return this; },
   json(body) { this.body = body; return this; } });
 
+const requests = [];
 const handler = createOperationsHandler({ config: { publicAppUrl: 'https://student.example' },
   now: () => new Date('2026-10-13T00:00:00.000Z'),
   verifierFactory: () => async () => ({ userId: 'student-fixture' }),
-  fetchImpl: async () => ({ status: 401 }) });
+  fetchImpl: async (url, options) => {
+    requests.push({ url, method: options.method, requestId: options.headers['X-Request-Id'] });
+    if (url.endsWith('/data.json')) return { status: 200, json: async () => ({ notes: [] }) };
+    return { status: 401, json: async () => ({ error: 'redacted' }) };
+  } });
 const res = response();
 await handler({ method: 'GET', query: {}, headers: { 'x-request-id': '11111111-1111-4111-8111-111111111111' } }, res);
 assert.equal(res.statusCode, 200);
 assert.equal(res.body.checks.length, 41);
 assert.deepEqual(res.body.policy.ruleIds, [...RULE_IDS]);
-assert.deepEqual(res.body.checkCounts, { total: 41, measured: 2, matched: 2, notRun: 39 });
-assert.equal(res.body.checks.filter(item => item.status === 'not_run').length, 39);
+assert.deepEqual(res.body.checkCounts, { total: 41, measured: 3, matched: 3, notRun: 38 });
+assert.equal(res.body.checks.filter(item => item.status === 'not_run').length, 38);
+assert.equal(requests.length, 3);
+assert.deepEqual(requests.map(item => item.method), ['GET', 'GET', 'GET']);
+assert.equal(requests.every(item => /^https:\/\/student\.example\//u.test(item.url)), true);
+assert.equal(new Set(requests.map(item => item.requestId)).size, 3);
 const serialized = JSON.stringify(res.body);
 assert.doesNotMatch(serialized, /Bearer\s+[A-Za-z0-9._~+/-]{16,}|sb_secret_|-----BEGIN [A-Z ]*PRIVATE KEY-----/u);
 const mismatch = response();
 const unsafeHandler = createOperationsHandler({ config: { publicAppUrl: 'https://student.example' },
-  verifierFactory: () => async () => ({ userId: 'student-fixture' }), fetchImpl: async () => ({ status: 200 }) });
+  verifierFactory: () => async () => ({ userId: 'student-fixture' }),
+  fetchImpl: async (url) => url.endsWith('/data.json')
+    ? ({ status: 200, json: async () => ({ notes: [{ id: 'unexpected' }] }) })
+    : ({ status: 200, json: async () => ({}) }) });
 await unsafeHandler({ method: 'GET', query: {}, headers: {} }, mismatch);
-assert.equal(mismatch.body.checkCounts.matched, 1);
+assert.equal(mismatch.body.checkCounts.matched, 0);
 const [html, app, worker] = await Promise.all([
   readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
   readFile(new URL('../public/app.js', import.meta.url), 'utf8'),
