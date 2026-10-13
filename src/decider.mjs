@@ -17,7 +17,7 @@ function isOwnedNote(subjectId, noteId) {
   const subject = identityTokens(subjectId, SUBJECT_NAMESPACE);
   const resource = identityTokens(noteId, NOTE_NAMESPACE);
   if (!subject.length || resource.length < subject.length) return false;
-  return resource.some((_, start) => subject.every((token, offset) => resource[start + offset] === token));
+  return subject.every((token, index) => resource[index] === token);
 }
 
 // 판정기는 메모 한 건의 읽기·수정 경로만 허용합니다. 소유자는 자료 API가 다시 검사합니다.

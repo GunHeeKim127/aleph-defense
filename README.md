@@ -314,7 +314,7 @@ flowchart LR
 판정기는 계약에 있는 `subjectId`, `deviceRegistered`, `method`, `route`, `path`, `queryLength`만 사용합니다.
 메모 한 건의 `GET·PUT /notes/:id`만 허용하고 `/api` 접두사가 붙은 같은 경로도 동일하게 처리합니다.
 메모 전체 목록 `GET /notes`와 공지 구역의 읽기·쓰기는 판정기에서 모두 `deny · resource_not_allowed`입니다.
-판정 요청에는 역할이 없으므로 `subjectId`에서 강사 역할을 추측하지 않습니다. 메모는 `student-a`와 `note-a-1`처럼 구역 접두사를 뺀 사용자 표지를 토큰 경계로 비교하고, API가 저장된 실제 소유자를 다시 확인합니다.
+판정 요청에는 역할이 없으므로 `subjectId`에서 강사 역할을 추측하지 않습니다. 메모는 `student-a`와 `note-a-1`처럼 구역 접두사를 뺀 자원 ID가 사용자 표지로 시작하는지 토큰 경계로 비교하고, API가 저장된 실제 소유자를 다시 확인합니다.
 쿼리가 있거나 경로·메서드·route가 허용된 한 건 요청과 다르면 기본 거부합니다.
 `:id`와 같은 깊이에 `export` 같은 기능 경로를 만들지 않았으며 알 수 없는 경로는 기본 거부합니다.
 
