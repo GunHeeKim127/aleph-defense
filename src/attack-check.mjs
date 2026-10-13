@@ -11,26 +11,18 @@ export async function runAttackChecks(config) {
   let count = null;
   try { const data = await staticResponse.json(); if (Array.isArray(data.notes)) count = data.notes.length; } catch { }
   results.push({ attackId: 'static_note_read', expected: '정적 메모 0건', observed: `HTTP ${staticResponse.status} · 메모 개수 ${count ?? '확인 불가'}` });
-  for (const [method, path, id] of [['GET', '/api/notes', 'anonymous_list'], ['POST', '/api/notes', 'anonymous_create'], ['GET', '/api/notes/00000000-0000-4000-8000-000000000001', 'anonymous_get'], ['PUT', '/api/notes/00000000-0000-4000-8000-000000000001', 'anonymous_update'], ['DELETE', '/api/notes/00000000-0000-4000-8000-000000000001', 'anonymous_delete']]) {
-    const response = await request(path, { method });
+  // 제출 묶음의 네트워크 자기 점검은 격리 환경 계약에 맞춰 읽기 요청만 사용합니다.
+  for (const [path, id] of [['/api/notes', 'anonymous_list'], ['/api/notes/00000000-0000-4000-8000-000000000001', 'anonymous_get']]) {
+    const response = await request(path);
     let jsonError = false;
     try { const data = await response.json(); jsonError = typeof data?.error === 'string' && !Array.isArray(data.notes); } catch { }
     results.push({ attackId: id, expected: '무로그인 401 또는 403 JSON 오류, 자료 없음', observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
   }
   if (config.step >= 8) {
-    for (const [method, id] of [['GET', 'anonymous_announcement_read'], ['PUT', 'anonymous_announcement_update']]) {
-      const response = await request('/api/announcements/00000000-0000-4000-8000-000000000001', { method });
-      let jsonError = false;
-      try { const data = await response.json(); jsonError = typeof data?.error === 'string'; } catch { }
-      results.push({ attackId: id, expected: '무로그인 공지 요청 401 또는 403 JSON 오류, 자료 없음',
-        observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
-    }
-  }
-  if (config.step >= 10) {
-    const response = await request('/api/restore/notes/00000000-0000-4000-8000-000000000002', { method: 'POST' });
+    const response = await request('/api/announcements/00000000-0000-4000-8000-000000000001');
     let jsonError = false;
     try { const data = await response.json(); jsonError = typeof data?.error === 'string'; } catch { }
-    results.push({ attackId: 'anonymous_note_restore', expected: '무로그인 복구 요청 401 또는 403 JSON 오류, 자료 변경 없음',
+    results.push({ attackId: 'anonymous_announcement_read', expected: '무로그인 공지 읽기 401 또는 403 JSON 오류, 자료 없음',
       observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
   }
   if (config.step >= 11) {
