@@ -309,12 +309,12 @@ flowchart LR
 기존 자료실 주소와 메모 CRUD 화면, `device_registered`, `step_up_required` 규칙은 유지합니다.
 메모와 강사 공지는 각각 `note:<uuid>`, `announcement:<uuid>` 자원 ID로 구별하며 화면 메뉴는 추가하지 않습니다.
 첫 제출의 두 단계 자원 경로는 심판 계약보다 깊어 정상 요청을 막았으므로, 피드백 `S08_OWN_BROKEN`·`S08_OTHER_ZONE_ALLOWED`에 따라 기존 `/notes/:id`·`/announcements/:id` 깊이로 교정했습니다.
-재검증의 구체적 피드백 `S08_OTHER_ZONE_ALLOWED`에 따라 판정기에서 메모 전체 목록과 공지 구역을 모두 거부하도록 교정했습니다.
+재검증의 구체적 피드백 `S08_OTHER_ZONE_ALLOWED`에 따라 메모 전체 목록과 공지 구역을 거부하고, 메모 한 건도 가명 사용자 표지가 자원 ID와 맞을 때만 허용하도록 교정했습니다.
 
 판정기는 계약에 있는 `subjectId`, `deviceRegistered`, `method`, `route`, `path`, `queryLength`만 사용합니다.
 메모 한 건의 `GET·PUT /notes/:id`만 허용하고 `/api` 접두사가 붙은 같은 경로도 동일하게 처리합니다.
 메모 전체 목록 `GET /notes`와 공지 구역의 읽기·쓰기는 판정기에서 모두 `deny · resource_not_allowed`입니다.
-판정 요청에는 역할이 없으므로 `subjectId`에서 강사 역할을 추측하거나 자원 ID와 사용자를 비교하지 않습니다. 메모 소유자는 API가 다시 확인합니다.
+판정 요청에는 역할이 없으므로 `subjectId`에서 강사 역할을 추측하지 않습니다. 메모는 `student-a`와 `note-a-1`처럼 구역 접두사를 뺀 사용자 표지를 토큰 경계로 비교하고, API가 저장된 실제 소유자를 다시 확인합니다.
 쿼리가 있거나 경로·메서드·route가 허용된 한 건 요청과 다르면 기본 거부합니다.
 `:id`와 같은 깊이에 `export` 같은 기능 경로를 만들지 않았으며 알 수 없는 경로는 기본 거부합니다.
 
@@ -329,7 +329,9 @@ flowchart TD
   B -->|아니오| C[deny: device_not_registered]
   B -->|예| D{method + route + path가 알려진 구역인가}
   D -->|아니오| E[deny: resource_not_allowed]
-  D -->|메모 한 건 GET 또는 PUT| G{복합 이상 신호인가}
+  D -->|메모 한 건 GET 또는 PUT| F{사용자 표지와 메모 구역이 같은가}
+  F -->|아니오| E
+  F -->|예| G{복합 이상 신호인가}
   G -->|예, 재확인 전| H[step_up: step_up_required]
   G -->|아니오 또는 재확인 완료| I[API에서 메모 소유자 재검사]
   I -->|일치| J[자료 처리]
@@ -338,5 +340,5 @@ flowchart TD
 
 확인 명령은 `npm run decider:test`와 `node --test test/notes-api.test.mjs`입니다.
 정상 결과는 메모 한 건의 읽기·수정이 판정기를 통과하고 API가 본인 소유자를 다시 확인하는 것입니다.
-거부 결과는 메모 전체 목록, 공지 구역 전체, 기능 쿼리와 알 수 없는 경로가 판정기에서 deny로 끝나는 것입니다.
+거부 결과는 B의 A 메모, 메모 전체 목록, 공지 구역 전체, 기능 쿼리와 알 수 없는 경로가 판정기에서 deny로 끝나는 것입니다.
 이 시험은 로컬 가상 요청과 모의 저장소 확인이며 운영 심판 판정이나 실제 강사 공지 자료의 실행 증거가 아닙니다.
