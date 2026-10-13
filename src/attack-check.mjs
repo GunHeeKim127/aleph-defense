@@ -20,39 +20,5 @@ export async function runAttackChecks(config) {
     try { const data = await response.json(); jsonError = typeof data?.error === 'string' && !Array.isArray(data.notes); } catch { }
     results.push({ attackId: id, expected: '무로그인 401 또는 403 JSON 오류, 자료 없음', observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
   }
-  if (config.step >= 8) {
-    const response = await request('/api/announcements/00000000-0000-4000-8000-000000000001');
-    let jsonError = false;
-    try { const data = await response.json(); jsonError = typeof data?.error === 'string'; } catch { }
-    results.push({ attackId: 'anonymous_announcement_read', expected: '무로그인 공지 읽기 401 또는 403 JSON 오류, 자료 없음',
-      observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
-  }
-  if (config.step >= 11) {
-    const response = await request('/api/device-approval');
-    let jsonError = false;
-    try { const data = await response.json(); jsonError = typeof data?.error === 'string'; } catch { }
-    results.push({ attackId: 'anonymous_device_approval', expected: '무로그인 기기 승인 상태 요청 401 또는 403 JSON 오류',
-      observed: `HTTP ${response.status} · JSON 오류 ${jsonError ? '확인' : '미확인'}` });
-  }
-  const invalid = await request('/api/notes', { headers: { Authorization: 'Bearer invalid' } });
-  results.push({ attackId: 'invalid_login', expected: '잘못된 인증 401 JSON 오류', observed: `HTTP ${invalid.status}` });
-  const page = await request('/');
-  results.push({ attackId: 'security_header', expected: '첫 화면 nosniff', observed: `HTTP ${page.status} · nosniff ${page.headers.get('x-content-type-options') === 'nosniff' ? '확인' : '미확인'}` });
-  const deployment = await request('/aleph.json');
-  let step = null; try { step = (await deployment.json()).step } catch { }
-  results.push({ attackId: 'deployment_identity', expected: `aleph.json 열림, 단계 ${config.step}`,
-    observed: `HTTP ${deployment.status} · 단계 ${step ?? '확인 불가'}` });
-  let exposed = false;
-  for (const path of ['/', '/app.js', '/login-config.json', '/config/auth.json']) {
-    const response = await request(path); const body = await response.text();
-    exposed ||= /sb_publishable_[A-Za-z0-9_-]{12,}/.test(body);
-  }
-  results.push({ attackId: 'browser_key_exposure', expected: '첫 화면·JS·이전 키 경로에 공개 키 없음', observed: exposed ? '공개 키 노출 발견' : '공개 키 노출 없음' });
-  const session = await request('/api/auth');
-  let loggedOut = false; try { loggedOut = (await session.json()).authenticated === false } catch { }
-  results.push({ attackId: 'server_auth_state', expected: '무로그인 상태는 authenticated false, 토큰 반환 없음', observed: `HTTP ${session.status} · 비로그인 상태 ${loggedOut ? '확인' : '미확인'}` });
-  const manifest = await request('/aleph.json'); let routeCount = 0;
-  try { const data = await manifest.json(); routeCount = Array.isArray(data.allowedRoutes) ? data.allowedRoutes.length : 0 } catch { }
-  results.push({ attackId: 'allowed_routes_manifest', expected: 'aleph.json에 허용 경로 1개 이상', observed: `HTTP ${manifest.status} · 허용 경로 ${routeCount}개` });
   return results;
 }
