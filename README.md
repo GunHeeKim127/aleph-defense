@@ -309,9 +309,12 @@ flowchart LR
 기존 자료실 주소와 메모 CRUD 화면, `device_registered`, `step_up_required` 규칙은 유지합니다.
 메모와 강사 공지는 각각 `note:<uuid>`, `announcement:<uuid>` 자원 ID로 구별하며 화면 메뉴는 추가하지 않습니다.
 첫 제출의 두 단계 자원 경로는 심판 계약보다 깊어 정상 요청을 막았으므로, 피드백 `S08_OWN_BROKEN`·`S08_OTHER_ZONE_ALLOWED`에 따라 기존 `/notes/:id`·`/announcements/:id` 깊이로 교정했습니다.
+재검증에서도 같은 코드가 반복되어 정상 화면의 `GET /notes` 목록 읽기를 명시적으로 허용하고, 개별 메모는 사용자 표지가 포함된 자원 ID만 허용하며, 공지 수정은 검증된 강사 표지의 사용자만 통과하도록 보완했습니다.
 
 판정기는 계약에 있는 `subjectId`, `deviceRegistered`, `method`, `route`, `path`, `queryLength`만 사용합니다.
-자기 메모 경로는 `/notes/:id`, 강사 공지 경로는 `/announcements/:id`이며 실제 경로의 자원 ID가 `subjectId`와 정확히 같아야 합니다.
+정상 목록 읽기 `GET /notes`는 허용하고 API가 검증된 사용자 소유자로 다시 필터링합니다.
+개별 자기 메모는 `/notes/:id`, 강사 공지는 `/announcements/:id`이며 엔진이 확인한 사용자 표지와 자원 ID의 사용자 표지가 일치해야 합니다.
+공지 수정은 엔진이 확인한 강사 표지의 사용자만 판정기를 통과하고 API에서 검증된 강사 권한과 저장 작성자를 다시 확인합니다.
 메모 GET·PUT과 공지 PUT만 구역 규칙으로 허용하고, 쿼리가 있거나 경로·메서드·route가 다르면 `deny · resource_not_allowed`입니다.
 `:id`와 같은 깊이에 `export` 같은 기능 경로를 만들지 않았으며 알 수 없는 경로는 기본 거부합니다.
 

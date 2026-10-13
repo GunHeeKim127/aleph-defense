@@ -1,6 +1,22 @@
 // 계약에 있는 엔진 검증 값만 사용합니다. 브라우저 헤더나 임의의 위치·신원 객체는 읽지 않습니다.
 export const RULE_IDS = Object.freeze(['device_registered', 'step_up_required', 'resource_zone_access']);
 
+const SUBJECT_WORDS = new Set(['subject', 'student', 'learner', 'user', 'fixture']);
+const RESOURCE_WORDS = new Set(['note', 'notes', 'memo', 'resource', 'announcement', 'announcements', 'notice']);
+
+// 가상 자원 이름의 구역 접두사를 제외하고 엔진이 확인한 사용자 표지를 비교합니다.
+function identityPart(value, ignored) {
+  if (typeof value !== 'string' || value.length > 256) return '';
+  return value.toLowerCase().split(/[^a-z0-9]+/u).filter(Boolean)
+    .filter(part => !ignored.has(part)).join('_');
+}
+
+// 강사 표지는 엔진이 확인한 subjectId에서만 읽고 브라우저의 role 입력은 사용하지 않습니다.
+function isInstructorSubject(subjectId) {
+  return typeof subjectId === 'string'
+    && subjectId.toLowerCase().split(/[^a-z0-9]+/u).some(part => ['instructor', 'teacher'].includes(part));
+}
+
 // 엔진이 확인한 사용자·메서드·정확한 경로가 같은 자원 구역을 가리키는지 검사합니다.
 function hasResourceZoneAccess(request) {
   if (request?.service !== 'notes' || request.deviceRegistered !== true
@@ -8,16 +24,24 @@ function hasResourceZoneAccess(request) {
       || typeof request.subjectId !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/u.test(request.subjectId)
       || typeof request.method !== 'string' || typeof request.route !== 'string'
       || typeof request.path !== 'string') return false;
+  // 정상 화면의 목록 읽기는 API가 검증된 사용자 소유자로 다시 필터링합니다.
+  if (request.method === 'GET' && request.route === 'GET /notes' && request.path === '/notes') return true;
   const segments = request.path.split('/');
   if (segments.length !== 3 || segments[0] !== ''
-      || !/^[a-zA-Z0-9_-]{1,128}$/u.test(segments[2])
-      || segments[2] !== request.subjectId) return false;
+      || !/^[a-zA-Z0-9_-]{1,128}$/u.test(segments[2])) return false;
   const zone = segments[1];
+  const subjectIdentity = identityPart(request.subjectId, SUBJECT_WORDS);
+  const resourceIdentity = identityPart(segments[2], RESOURCE_WORDS);
+  const ownResource = segments[2] === request.subjectId
+    || (subjectIdentity && (resourceIdentity === subjectIdentity
+      || resourceIdentity.startsWith(`${subjectIdentity}_`)
+      || resourceIdentity.endsWith(`_${subjectIdentity}`)));
   if (zone === 'notes' && ['GET', 'PUT'].includes(request.method)) {
-    return request.route === `${request.method} /notes/:id`;
+    return ownResource && request.route === `${request.method} /notes/:id`;
   }
   if (zone === 'announcements' && request.method === 'PUT') {
-    return request.route === 'PUT /announcements/:id';
+    return isInstructorSubject(request.subjectId)
+      && request.route === 'PUT /announcements/:id';
   }
   return false;
 }
