@@ -1,0 +1,12 @@
+{
+  "schema": "aleph.safe-policy.v1",
+  "version": "step9-safe-7dbbf07",
+  "sourceCommit": "7dbbf0727b8e76b908c31f7daa0463b8799d9478",
+  "service": "student-notes",
+  "rules": [
+    { "id": "device_registered", "mode": "require" },
+    { "id": "step_up_required", "mode": "challenge_on_verified_composite_signal" },
+    { "id": "resource_zone_access", "mode": "exact_path_and_owner_api_check" },
+    { "id": "burst_read", "mode": "propose_revocation" }
+  ]
+}
