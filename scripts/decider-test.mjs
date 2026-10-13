@@ -30,6 +30,8 @@ export async function checkDecider({ decide, ruleIds }) {
     { name: '등록 기기의 정상 요청', request: normal, decision: 'allow' },
     { name: '미등록 기기의 가상 요청', request: { ...normal, requestId: randomUUID(),
       deviceRegistered: false }, decision: 'deny', reasonCode: 'device_not_registered' },
+    { name: '기기 등록값 없는 가상 요청', request: { ...normal, requestId: randomUUID(),
+      deviceRegistered: undefined }, decision: 'deny', reasonCode: 'device_not_registered' },
   ];
   if (ruleIds.includes('step_up_required')) {
     checks.push(

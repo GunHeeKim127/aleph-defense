@@ -241,3 +241,32 @@ respond.mjs는 재검증된 block 후보만 15분 거부 규칙으로 만들고 
 ## 코드 설명 읽기
 
 함수 위의 한국어 주석에서 역할을 확인할 수 있습니다. JSON은 주석을 허용하지 않으므로 [JSON 항목 묶음 설명](docs/JSON_COMMENTS.md)을 함께 읽으세요.
+
+## 6단계 저장점: 등록한 기기만 자료실 접근
+
+시작 커밋은 `5ea26fd 2026.10.08.`이며 시작 시 Git 상태는 깨끗했습니다.
+README의 마지막 기능 기록은 `82bcb7b 보너스 xdr-02 저장점`이었고, 이후 `5ea26fd`는 XDR 로그와 만료 규칙만 갱신했습니다.
+기존 자료실 주소, 로그인·본인 메모 CRUD, 브라우저 화면, XDR 모듈과 `aleph.config.json`은 변경하지 않았습니다.
+
+판정 요청은 운영 엔진이 확인한 최상위 `subjectId`와 `deviceRegistered`를 사용합니다.
+`subjectId`는 발급자·대상·반·프로젝트를 묶은 가명 주체 ID이며 Supabase 사용자 번호와 직접 비교하지 않습니다.
+`deviceRegistered`가 정확히 `true`이면 `device_registered` 규칙으로 allow·approved를 반환합니다.
+false·누락·다른 값은 모두 deny·device_not_registered로 기본 거부합니다.
+인증서·CA·서명 키·기기 개인키를 만들거나 코드·Git·로그·제출 묶음에 넣지 않습니다.
+
+```mermaid
+flowchart LR
+  A[운영 엔진이 신원·기기·경로 확인] --> B[decide 요청]
+  B --> C{deviceRegistered = true?}
+  C -->|예| D[allow / approved]
+  C -->|아니오·누락| E[deny / device_not_registered]
+```
+
+확인 명령: `npm run decider:test`
+
+1. 실행기는 계약에 맞는 등록 기기의 정상 자료 읽기 요청을 만들고 allow인지 확인합니다.
+2. 같은 가상 요청에서 `deviceRegistered`만 false로 바꿔 deny·device_not_registered인지 확인합니다.
+3. 이 명령은 로컬 가상 연습이며 미등록 공격에 대한 실제 심판 판정이나 운영 연결 결과로 기록하지 않습니다.
+4. 별도 접속 프로그램 설치나 키 생성 명령은 없습니다.
+
+정상 결과는 `통과 · 등록 기기의 정상 요청`, 거부 결과는 `통과 · 미등록 기기의 가상 요청`입니다.
