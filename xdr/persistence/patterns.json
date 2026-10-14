@@ -1,0 +1,20 @@
+{
+  "schema": "aleph.xdr.patterns.v1",
+  "patterns": [
+    {
+      "name": "unsigned_service_change",
+      "conditions": { "ruleLevelAtLeast": 10, "mitre": "T1543", "signals": ["서명 없는 새 서비스", "서비스 실행 파일 변경", "평소 목록에 없는 서비스"] },
+      "evidence": "MITRE ATT&CK T1543: 서명되지 않은 서비스 생성이나 실행 경로 변경은 시스템 서비스 기반 지속성 신호이다."
+    },
+    {
+      "name": "unfamiliar_scheduled_task",
+      "conditions": { "ruleLevelAtLeast": 10, "mitre": "T1053", "signals": ["처음 보는 예약 작업", "임의 이름의 예약 작업", "임시 폴더 프로그램 실행"] },
+      "evidence": "MITRE ATT&CK T1053: 평소 목록에 없는 예약 작업이 낯선 실행 파일을 호출하는 것은 예약 작업 기반 지속성 신호이다."
+    },
+    {
+      "name": "startup_folder_change",
+      "conditions": { "ruleLevelAtLeast": 10, "mitre": "T1543", "signals": ["시작 폴더의 새 프로그램", "평소 목록에 없는 시작 항목"] },
+      "evidence": "MITRE ATT&CK T1543: 시작 시 실행되는 항목에 평소 목록에 없는 프로그램이 추가되는 것은 부팅 후 지속 실행 신호이다."
+    }
+  ]
+}

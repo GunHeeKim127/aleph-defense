@@ -1,0 +1,78 @@
+{
+  "schema": "aleph.xdr.deny.v1",
+  "scope": "local_fixture",
+  "rules": [
+    {
+      "ruleId": "xdr.persistence.ps_01",
+      "action": "deny",
+      "sourceKey": "6d6ffb7916cdf2c631c91174688b8c1a5c7a371b23c22a3e6e8dd77e700e8306",
+      "alertId": "ps-01",
+      "pattern": "unsigned_service_change",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    },
+    {
+      "ruleId": "xdr.persistence.ps_02",
+      "action": "deny",
+      "sourceKey": "6d6ffb7916cdf2c631c91174688b8c1a5c7a371b23c22a3e6e8dd77e700e8306",
+      "alertId": "ps-02",
+      "pattern": "unfamiliar_scheduled_task",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    },
+    {
+      "ruleId": "xdr.persistence.ps_03",
+      "action": "deny",
+      "sourceKey": "0eef53fc0afbe1122a767e15cc49af6fab3773c792e1851c038baf3b117591be",
+      "alertId": "ps-03",
+      "pattern": "startup_folder_change",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    },
+    {
+      "ruleId": "xdr.persistence.ps_04",
+      "action": "deny",
+      "sourceKey": "b0343f22d6f4c87cdc629e2333c21a21ec57a795fa922ece725d44005c031885",
+      "alertId": "ps-04",
+      "pattern": "unsigned_service_change",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    },
+    {
+      "ruleId": "xdr.persistence.ps_05",
+      "action": "deny",
+      "sourceKey": "1d27c141526ca8abee13aa912338dbd380bace67d6c56155e1e78e752434b7d3",
+      "alertId": "ps-05",
+      "pattern": "unfamiliar_scheduled_task",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    },
+    {
+      "ruleId": "xdr.persistence.ps_06",
+      "action": "deny",
+      "sourceKey": "8578838177fea4bf17f2754f5170ef9c35ab757e10bb17388556b9d7e2729cbc",
+      "alertId": "ps-06",
+      "pattern": "unsigned_service_change",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    },
+    {
+      "ruleId": "xdr.persistence.ps_07",
+      "action": "deny",
+      "sourceKey": "dab07486e5ae125ead9f6070a2ed35cfb1d18d5f1971ae8e964fef4f483a2471",
+      "alertId": "ps-07",
+      "pattern": "unfamiliar_scheduled_task",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    },
+    {
+      "ruleId": "xdr.persistence.ps_08",
+      "action": "deny",
+      "sourceKey": "278d0ee082f78972d731812ff52f7c8819a7df615fd5380d9348011a0614bc15",
+      "alertId": "ps-08",
+      "pattern": "unsigned_service_change",
+      "startsAt": "2026-10-14T02:45:09.036Z",
+      "expiresAt": "2026-10-14T03:00:09.036Z"
+    }
+  ]
+}
