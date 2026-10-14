@@ -151,3 +151,11 @@
 {"moduleKey":"known-cve","alertId":"kc-14","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
 {"moduleKey":"known-cve","alertId":"kc-15","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
 {"moduleKey":"known-cve","alertId":"kc-16","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-09","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-10","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-11","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-12","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-13","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-14","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-15","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
+{"moduleKey":"known-cve","alertId":"kc-16","action":"alert","pattern":"known_cve_scanner_trace","confidence":0.6}
