@@ -1,0 +1,96 @@
+{
+  "schema": "aleph.xdr.deny.v1",
+  "scope": "local_fixture",
+  "rules": [
+    {
+      "ruleId": "xdr.exfiltration.ex_01",
+      "action": "deny",
+      "destinationKey": "4cc0983281edc66d39b655f7f3a9b34fc242975500d265cdddb7aee16a77dd6e",
+      "alertId": "ex-01",
+      "pattern": "unknown_destination_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_02",
+      "action": "deny",
+      "destinationKey": "b0e012c2c32db86d20a715a3ee969bdb261aa1aecc71693c84af315e5eddd798",
+      "alertId": "ex-02",
+      "pattern": "off_hours_archive_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_03",
+      "action": "deny",
+      "destinationKey": "4cc0983281edc66d39b655f7f3a9b34fc242975500d265cdddb7aee16a77dd6e",
+      "alertId": "ex-03",
+      "pattern": "command_channel_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_04",
+      "action": "deny",
+      "destinationKey": "b0e012c2c32db86d20a715a3ee969bdb261aa1aecc71693c84af315e5eddd798",
+      "alertId": "ex-04",
+      "pattern": "unknown_destination_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_05",
+      "action": "deny",
+      "destinationKey": "47ef6e37c28fe260d6653701834c32d3c9cdc09c333333d06affaa9461a344fb",
+      "alertId": "ex-05",
+      "pattern": "command_channel_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_06",
+      "action": "deny",
+      "destinationKey": "c3552a3c1ac56105c42a6635dd8e0e578b8d1a02e220aec39919c81724f6d5d4",
+      "alertId": "ex-06",
+      "pattern": "off_hours_archive_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_07",
+      "action": "deny",
+      "destinationKey": "f68522b366ca67be4c2038d113b313252de6554223d2a2b8e4af4dc5f1817a11",
+      "alertId": "ex-07",
+      "pattern": "unknown_destination_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_08",
+      "action": "deny",
+      "destinationKey": "cf71e51be803e61e25f99cdd66b6f18fe9a2f39858768adbd7bf38dc9e76535f",
+      "alertId": "ex-08",
+      "pattern": "command_channel_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_09",
+      "action": "deny",
+      "destinationKey": "343f0775b2b9ebe392a589f25ca064507a0a05b0fdc09528b76257fd0f06341d",
+      "alertId": "ex-09",
+      "pattern": "command_channel_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    },
+    {
+      "ruleId": "xdr.exfiltration.ex_10",
+      "action": "deny",
+      "destinationKey": "9169d789ce1aad99765a6b679bcc21f6ffa22b9573151f546bc51d13f8fde248",
+      "alertId": "ex-10",
+      "pattern": "unknown_destination_bulk_transfer",
+      "startsAt": "2026-10-14T03:04:07.418Z",
+      "expiresAt": "2026-10-14T03:19:07.418Z"
+    }
+  ]
+}
