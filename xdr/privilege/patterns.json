@@ -1,0 +1,20 @@
+{
+  "schema": "aleph.xdr.patterns.v1",
+  "patterns": [
+    {
+      "name": "administrator_group_addition",
+      "conditions": { "ruleLevelAtLeast": 10, "mitre": "T1078", "signals": ["평범한 계정의 관리자 그룹 추가", "여러 계정의 관리자 그룹 추가", "제거 직후 관리자 재등록"] },
+      "evidence": "MITRE ATT&CK T1078: 평소 권한이 낮은 정상 계정이 갑자기 관리자 그룹에 추가되는 것은 도용 계정의 권한 확대 신호이다."
+    },
+    {
+      "name": "unfamiliar_admin_command",
+      "conditions": { "ruleLevelAtLeast": 10, "mitre": "T1068", "signals": ["처음 보는 관리자 명령", "다른 계정 권한의 관리자 명령", "관리자 전환 직후 명령"] },
+      "evidence": "MITRE ATT&CK T1068: 기존에 보이지 않던 관리자 명령이나 권한 전환 직후의 명령 실행은 권한 상승 악용 신호이다."
+    },
+    {
+      "name": "off_hours_privilege_use",
+      "conditions": { "ruleLevelAtLeast": 10, "mitre": ["T1068", "T1078"], "signals": ["업무 시간 밖 관리자 명령", "업무 외 시각의 관리자 그룹 변경과 명령"] },
+      "evidence": "MITRE ATT&CK T1068 및 T1078: 평소와 다른 시각에 계정 권한 변경과 관리자 사용이 겹치는 것은 도용 계정의 권한 상승 신호이다."
+    }
+  ]
+}
