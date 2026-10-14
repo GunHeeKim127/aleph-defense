@@ -523,3 +523,28 @@ flowchart LR
 - 거부 결과: 무로그인·미승인 기기는 작전실과 보호 자료 401/403, 익명 메모 요청 401/403, API 응답 본문은 작전실 기록에서 제외.
 - 추가 회귀 확인: `npm run decider:test`, `npm run detect:test`, `npm run restore:test`, `npm run device:test`.
 - 실행하지 않은 운영 엔진 사건·회수와 41종 전체 시험은 미실행으로 유지하며 성공 문구를 통과 근거로 사용하지 않습니다.
+
+## 보너스 xdr-03 저장점: 알려진 취약점 악용 탐지
+
+`xdr/known-cve/read-alerts.mjs`는 원본 Wazuh fixture를 읽기만 하고 시각·출발 주소·계정·규칙 수준·설명 다섯 필드만 출력합니다. 인증 정보처럼 보이는 설명 값은 가리고 요청 URL·머리글 원문은 출력하지 않습니다.
+
+`patterns.json`은 CVE-2021-44228의 완전한 JNDI 원격 조회 구문과 MITRE ATT&CK T1190 기반 점검 흔적만 근거와 함께 정의합니다. `decide.mjs`는 같은 패턴을 상수로 포함하며 import, 파일 접근, 네트워크 요청 없이 경보 한 건을 동기 판정합니다.
+
+```mermaid
+flowchart LR
+  A[Wazuh fixture] --> B[read-alerts: 다섯 필드 확인]
+  A --> C[decide: 독립 패턴 판정]
+  C -->|명확 0.85 이상| D[respond: 15분 거부 후보]
+  C -->|애매 0.5 이상| E[xdr/alerts.log 한 줄 알림]
+  C -->|정상 0.5 미만| F[기존 ZTNA 판정 유지]
+  D --> G[신뢰된 주소 매핑 뒤 추가 거부]
+```
+
+`respond.mjs`는 `decide`가 다시 block으로 확인한 후보만 15분 만료 거부 규칙으로 기록합니다. 규칙에는 근거 경보 번호와 패턴 이름이 있으며 출발 주소 원문 대신 모듈별 SHA-256 지문을 사용합니다. 주소를 요청에서 임의로 믿지 않고 운영 연결자가 제공하는 신뢰된 `resolveSubject` 결과와 일치할 때만 기존 판정 앞에서 거부합니다.
+
+확인 명령: `npm run xdr:run -- known-cve`
+
+- 정상 결과: `result.json`에 block 8, alert 8, record 8이 나오고 `kc-17~24` 정상 이벤트는 모두 record입니다.
+- 거부 결과: `kc-01~08`의 완전한 JNDI 원격 조회 요청만 만료 시각·근거 경보 번호가 있는 후보 규칙으로 기록됩니다.
+- `kc-09~16`의 이름 검색·불완전한 흔적은 알림만 남고 거부 규칙이 되지 않습니다.
+- 이는 로컬 fixture 재생 결과이며 실제 운영 엔진에 배포되거나 심판을 통과했다는 뜻이 아닙니다.
